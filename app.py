@@ -4,36 +4,39 @@ Saudi Financial Database Chat UI
 A Streamlit app for natural language querying of Saudi XBRL financial data.
 """
 
-import streamlit as st
+import pandasai as pai
+from pandasai_litellm import LiteLLM
 import pandas as pd
+import streamlit as st
+import io
+from PIL import Image
 import os
 from pathlib import Path
 
-# Set up OpenRouter API from Streamlit secrets
-if "OPENROUTER_API_KEY" in st.secrets:
-    os.environ["OPENROUTER_API_KEY"] = st.secrets["OPENROUTER_API_KEY"]
+# --- LLM CONFIGURATION ---
+llm = LiteLLM(
+    model="openrouter/google/gemini-2.0-flash-001",
+    temperature=0,
+    max_tokens=None,
+    max_retries=2,
+    api_key=st.secrets["OPENROUTER_API_KEY"],
+)
 
-from pandasai import SmartDataframe
-from pandasai.llm.openai import OpenAI
+# --- PANDASAI CONFIGURATION ---
+pai.config.set({
+    "llm": llm,
+    'history_size': 10,
+    'system_prompt': "You are a helpful financial data analyst that answers questions about Saudi company financial data. Always provide clear, accurate answers.",
+})
 
-# Page config
+# --- PAGE CONFIG ---
 st.set_page_config(
     page_title="Saudi Financial Database",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
 )
 
-# Initialize LLM (OpenRouter-compatible)
-@st.cache_resource
-def get_llm():
-    api_key = st.secrets.get("OPENROUTER_API_KEY", "")
-    return OpenAI(
-        api_token=api_key,
-        model="google/gemini-2.0-flash-001",
-        api_base="https://openrouter.ai/api/v1"
-    )
-
-# Load data
+# --- LOAD DATA ---
 @st.cache_data
 def load_data():
     base_path = Path(__file__).parent / "data"
@@ -43,17 +46,11 @@ def load_data():
     analytics = pd.read_parquet(base_path / "analytics_view.parquet")
     return filings, facts, ratios, analytics
 
-# Initialize session state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "current_dataset" not in st.session_state:
-    st.session_state.current_dataset = "analytics"
-
-# Header
+# --- TITLE ---
 st.title("📊 Saudi Financial Database Chat")
 st.markdown("Ask questions about Saudi listed companies' financial data in natural language.")
 
-# Sidebar
+# --- SIDEBAR ---
 with st.sidebar:
     st.header("📁 Database Info")
 
@@ -77,18 +74,14 @@ with st.sidebar:
             "ratios": "📊 Financial Ratios"
         }[x]
     )
-    st.session_state.current_dataset = dataset_choice
 
     st.divider()
 
-    st.header("📋 Available Data")
-
+    st.header("📋 Available Columns")
     if dataset_choice == "analytics":
-        st.write("**Columns:**")
         cols = analytics.columns.tolist()
-        st.code("\n".join(cols[:20]) + f"\n... ({len(cols)} total)")
+        st.code("\n".join(cols[:15]) + f"\n... ({len(cols)} total)")
     elif dataset_choice == "filings":
-        st.write("**Columns:**")
         st.code("\n".join(filings.columns.tolist()))
     elif dataset_choice == "facts":
         st.write("**Metrics:**")
@@ -97,100 +90,102 @@ with st.sidebar:
         st.write("**Ratios:**")
         st.code("\n".join(ratios['ratio'].unique().tolist()))
 
-    st.divider()
-
-    st.header("💡 Example Questions")
-    examples = [
-        "What are the top 10 companies by revenue in 2024?",
-        "Show average ROE by sector in 2023",
-        "Which companies have debt to equity > 2?",
-        "Plot total assets trend for the top 5 companies",
-        "Compare net profit margins across sectors",
-        "List companies with negative net profit in 2024"
-    ]
-    for ex in examples:
-        if st.button(ex, key=ex):
-            st.session_state.messages.append({"role": "user", "content": ex})
-            st.rerun()
-
-    st.divider()
-
-    if st.button("🗑️ Clear Chat"):
-        st.session_state.messages = []
-        st.rerun()
-
-# Main chat area
+# --- MAIN AREA ---
 st.divider()
 
-# Display chat history
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        if message["role"] == "assistant" and "image" in message:
-            st.image(message["image"])
-        st.write(message["content"])
+# Show data preview
+with st.expander("📄 Data Preview", expanded=False):
+    filings, facts, ratios, analytics = load_data()
+    dataset_map = {
+        "analytics": analytics,
+        "filings": filings,
+        "facts": facts,
+        "ratios": ratios
+    }
+    st.dataframe(dataset_map[dataset_choice].head(10), use_container_width=True)
 
-# Chat input
-if prompt := st.chat_input("Ask a question about Saudi financial data..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+# --- EXAMPLE QUESTIONS ---
+st.subheader("💡 Example Questions")
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("Top 10 companies by revenue 2024"):
+        st.session_state.query = "What are the top 10 companies by revenue in 2024?"
+    if st.button("Average ROE by sector 2023"):
+        st.session_state.query = "Show average ROE by sector in 2023"
+    if st.button("Companies with debt to equity > 2"):
+        st.session_state.query = "Which companies have debt to equity ratio greater than 2?"
+with col2:
+    if st.button("Net profit margins by sector"):
+        st.session_state.query = "Compare net profit margins across sectors"
+    if st.button("Negative net profit 2024"):
+        st.session_state.query = "List companies with negative net profit in 2024"
+    if st.button("Create bar chart of top 5 by assets"):
+        st.session_state.query = "Create a bar chart showing top 5 companies by total assets"
 
-    with st.chat_message("user"):
+st.divider()
+
+# --- CHAT INPUT ---
+prompt = st.chat_input("Ask a question about Saudi financial data...")
+
+# Check for button-triggered query
+if "query" in st.session_state and st.session_state.query:
+    prompt = st.session_state.query
+    st.session_state.query = None
+
+if prompt:
+    # Get selected dataset
+    filings, facts, ratios, analytics = load_data()
+    dataset_map = {
+        "analytics": analytics,
+        "filings": filings,
+        "facts": facts,
+        "ratios": ratios
+    }
+    selected_df = dataset_map[dataset_choice]
+
+    # Create PandasAI DataFrame
+    df = pai.DataFrame(selected_df)
+
+    # Show user message
+    with st.chat_message("human"):
         st.write(prompt)
 
-    with st.chat_message("assistant"):
+    # Get AI response
+    with st.chat_message("ai"):
         with st.spinner("Analyzing data..."):
             try:
-                filings, facts, ratios, analytics = load_data()
+                response = df.chat(prompt)
 
-                dataset_map = {
-                    "analytics": analytics,
-                    "filings": filings,
-                    "facts": facts,
-                    "ratios": ratios
-                }
+                if response.type == 'dataframe':
+                    tabResult, tabCode = st.tabs(["Result", "Code"])
+                    with tabResult:
+                        st.dataframe(response.value, use_container_width=True, hide_index=True)
+                    with tabCode:
+                        st.code(response.last_code_executed, language='python')
 
-                selected_df = dataset_map[st.session_state.current_dataset]
+                elif response.type == "chart":
+                    with open(response.value, "rb") as f:
+                        img_bytes = f.read()
+                    img = Image.open(io.BytesIO(img_bytes))
 
-                # Create SmartDataframe with PandasAI
-                llm = get_llm()
-                sdf = SmartDataframe(selected_df, config={
-                    "llm": llm,
-                    "verbose": False,
-                    "enable_cache": False
-                })
+                    tabResult, tabCode = st.tabs(["Result", "Code"])
+                    with tabResult:
+                        st.image(img)
+                    with tabCode:
+                        st.code(response.last_code_executed, language='python')
 
-                # Execute query
-                result = sdf.chat(prompt)
+                    os.remove(response.value)
 
-                # Display result
-                response_content = ""
-
-                if isinstance(result, str) and (result.endswith('.png') or 'chart' in result.lower()):
-                    if os.path.exists(result):
-                        st.image(result)
-                        response_content = "Chart generated"
-                        st.session_state.messages.append({
-                            "role": "assistant",
-                            "content": response_content,
-                            "image": result
-                        })
-                    else:
-                        st.write(result)
-                        response_content = str(result)
-                        st.session_state.messages.append({"role": "assistant", "content": response_content})
-                elif isinstance(result, pd.DataFrame):
-                    st.dataframe(result, use_container_width=True)
-                    response_content = f"Found {len(result)} results"
-                    st.session_state.messages.append({"role": "assistant", "content": response_content})
                 else:
-                    st.write(result)
-                    response_content = str(result)
-                    st.session_state.messages.append({"role": "assistant", "content": response_content})
+                    tabResult, tabCode = st.tabs(["Result", "Code"])
+                    with tabResult:
+                        st.write(response.value)
+                    with tabCode:
+                        st.code(response.last_code_executed, language='python')
 
             except Exception as e:
-                error_msg = f"Error: {str(e)}"
-                st.error(error_msg)
-                st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                st.error(f"Error: {str(e)}")
 
-# Footer
+# --- FOOTER ---
 st.divider()
 st.caption("Powered by PandasAI + OpenRouter/Gemini | Data: Saudi Tadawul XBRL Financials")
