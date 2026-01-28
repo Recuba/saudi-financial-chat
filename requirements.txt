@@ -1,7 +1,7 @@
 numpy
 pandas
-pandasai
+pandasai>=3.0.0
+pandasai_litellm
 Pillow
 streamlit
 pyarrow
-litellm
