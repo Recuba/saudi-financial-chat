@@ -5,7 +5,7 @@ A Streamlit app for natural language querying of Saudi XBRL financial data.
 """
 
 import pandasai as pai
-from pandasai_litellm import LiteLLM
+import litellm
 import pandas as pd
 import streamlit as st
 import io
@@ -13,20 +13,34 @@ from PIL import Image
 import os
 from pathlib import Path
 
-# --- LLM CONFIGURATION ---
-llm = LiteLLM(
-    model="openrouter/google/gemini-2.0-flash-001",
-    temperature=0,
-    max_tokens=None,
-    max_retries=2,
-    api_key=st.secrets["OPENROUTER_API_KEY"],
-)
+# --- LITELLM CONFIGURATION ---
+# Set the API key for OpenRouter
+os.environ["OPENROUTER_API_KEY"] = st.secrets["OPENROUTER_API_KEY"]
+
+# Custom LLM class for PandasAI using litellm
+class OpenRouterLLM:
+    def __init__(self, model="openrouter/google/gemini-2.0-flash-001"):
+        self.model = model
+
+    def call(self, instruction, context=None, suffix=""):
+        messages = [{"role": "user", "content": instruction}]
+        response = litellm.completion(
+            model=self.model,
+            messages=messages,
+            temperature=0,
+            api_key=st.secrets["OPENROUTER_API_KEY"],
+        )
+        return response.choices[0].message.content
+
+    def generate_code(self, instruction, context=None):
+        return self.call(instruction, context)
+
+llm = OpenRouterLLM()
 
 # --- PANDASAI CONFIGURATION ---
 pai.config.set({
     "llm": llm,
     'history_size': 10,
-    'system_prompt': "You are a helpful financial data analyst that answers questions about Saudi company financial data. Always provide clear, accurate answers.",
 })
 
 # --- PAGE CONFIG ---
