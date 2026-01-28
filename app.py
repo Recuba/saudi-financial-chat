@@ -8,13 +8,7 @@ import streamlit as st
 import pandas as pd
 import os
 from pathlib import Path
-
-# Set up OpenRouter API from Streamlit secrets
-if "OPENROUTER_API_KEY" in st.secrets:
-    os.environ["OPENROUTER_API_KEY"] = st.secrets["OPENROUTER_API_KEY"]
-
-from pandasai import SmartDataframe
-from pandasai.llm import LiteLLM
+from openai import OpenAI
 
 # Page config
 st.set_page_config(
@@ -23,10 +17,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize LLM
+# Initialize OpenRouter client
 @st.cache_resource
-def get_llm():
-    return LiteLLM(model="openrouter/google/gemini-2.0-flash-001")
+def get_client():
+    api_key = st.secrets.get("OPENROUTER_API_KEY", "")
+    return OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key
+    )
 
 # Load data
 @st.cache_data
@@ -37,6 +35,39 @@ def load_data():
     ratios = pd.read_parquet(base_path / "ratios.parquet")
     analytics = pd.read_parquet(base_path / "analytics_view.parquet")
     return filings, facts, ratios, analytics
+
+def query_data(df, question, client):
+    """Use LLM to generate and execute pandas code."""
+    columns_info = f"Columns: {', '.join(df.columns.tolist())}"
+    sample = df.head(3).to_string()
+
+    prompt = f"""You are a data analyst. Given this pandas DataFrame 'df':
+
+{columns_info}
+
+Sample data:
+{sample}
+
+User question: {question}
+
+Write Python code using pandas to answer this question.
+- Use only the 'df' variable
+- Return the result as 'result' variable
+- Keep code simple and direct
+- Only output the Python code, nothing else"""
+
+    response = client.chat.completions.create(
+        model="google/gemini-2.0-flash-001",
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    code = response.choices[0].message.content
+    code = code.replace("```python", "").replace("```", "").strip()
+
+    # Execute the code
+    local_vars = {"df": df, "pd": pd}
+    exec(code, {}, local_vars)
+    return local_vars.get("result", "No result generated")
 
 # Initialize session state
 if "messages" not in st.session_state:
@@ -131,7 +162,6 @@ if prompt := st.chat_input("Ask a question about Saudi financial data..."):
     with st.chat_message("assistant"):
         with st.spinner("Analyzing data..."):
             try:
-                # Get selected dataset
                 filings, facts, ratios, analytics = load_data()
 
                 dataset_map = {
@@ -142,18 +172,13 @@ if prompt := st.chat_input("Ask a question about Saudi financial data..."):
                 }
 
                 selected_df = dataset_map[st.session_state.current_dataset]
+                client = get_client()
 
-                # Create SmartDataframe
-                llm = get_llm()
-                sdf = SmartDataframe(selected_df, config={"llm": llm, "verbose": False})
+                result = query_data(selected_df, prompt, client)
 
-                # Execute query
-                result = sdf.chat(prompt)
-
-                # Display result
                 if isinstance(result, pd.DataFrame):
                     st.dataframe(result, use_container_width=True)
-                    response_content = f"DataFrame with {len(result)} rows"
+                    response_content = f"Found {len(result)} results"
                 else:
                     st.write(result)
                     response_content = str(result)
@@ -167,4 +192,4 @@ if prompt := st.chat_input("Ask a question about Saudi financial data..."):
 
 # Footer
 st.divider()
-st.caption("Powered by PandasAI + OpenRouter/Gemini | Data: Saudi Tadawul XBRL Financials")
+st.caption("Powered by OpenRouter/Gemini | Data: Saudi Tadawul XBRL Financials")
