@@ -26,10 +26,247 @@ pai.config.set({
 
 # --- PAGE CONFIG ---
 st.set_page_config(
-    page_title="Saudi Financial Database",
-    page_icon="📊",
+    page_title="رعد | Saudi Financial AI",
+    page_icon="⚡",
     layout="wide",
 )
+
+# --- CUSTOM CSS WITH VARIABLES ---
+st.markdown("""
+<style>
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+
+/* CSS Custom Properties (Variables) */
+:root {
+    /* Gold Palette */
+    --gold-primary: #D4A84B;
+    --gold-light: #E8C872;
+    --gold-dark: #B8860B;
+    --gold-gradient: linear-gradient(135deg, #D4A84B 0%, #E8C872 50%, #B8860B 100%);
+
+    /* Background Colors */
+    --bg-dark: #0E0E0E;
+    --bg-card: #1A1A1A;
+    --bg-card-hover: #252525;
+    --bg-input: #2A2A2A;
+
+    /* Text Colors */
+    --text-primary: #FFFFFF;
+    --text-secondary: #B0B0B0;
+    --text-muted: #707070;
+
+    /* Accent Colors */
+    --accent-green: #4CAF50;
+    --accent-red: #F44336;
+
+    /* Spacing */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+
+    /* Shadows */
+    --shadow-gold: 0 4px 20px rgba(212, 168, 75, 0.3);
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Global Background */
+.stApp {
+    background: radial-gradient(ellipse at top, #1a1a1a 0%, var(--bg-dark) 50%) !important;
+}
+
+/* Main Container */
+[data-testid="stAppViewContainer"] {
+    background: transparent !important;
+}
+
+[data-testid="stMain"] {
+    background: transparent !important;
+}
+
+/* Sidebar Styling */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-dark) 100%) !important;
+    border-right: 1px solid rgba(212, 168, 75, 0.2) !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stMarkdown"] {
+    color: var(--text-primary) !important;
+}
+
+/* Headers */
+h1, h2, h3 {
+    color: var(--text-primary) !important;
+    font-family: 'Tajawal', sans-serif !important;
+}
+
+/* Brand Title with Gold Gradient */
+.brand-title {
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    filter: drop-shadow(0 2px 4px rgba(212, 168, 75, 0.4));
+}
+
+.brand-subtitle {
+    color: var(--text-secondary);
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+/* Metric Cards */
+[data-testid="stMetric"] {
+    background: var(--bg-card) !important;
+    border: 1px solid rgba(212, 168, 75, 0.3) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+[data-testid="stMetric"]:hover {
+    border-color: var(--gold-primary) !important;
+    box-shadow: var(--shadow-gold) !important;
+    transform: translateY(-2px);
+}
+
+[data-testid="stMetric"] [data-testid="stMetricLabel"] {
+    color: var(--gold-light) !important;
+}
+
+[data-testid="stMetric"] [data-testid="stMetricValue"] {
+    color: var(--text-primary) !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+}
+
+/* Buttons */
+.stButton > button {
+    background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-primary) 100%) !important;
+    color: var(--bg-dark) !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 1.5rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%) !important;
+    box-shadow: var(--shadow-gold) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Chat Input */
+[data-testid="stChatInput"] textarea {
+    background: var(--bg-input) !important;
+    border: 1px solid rgba(212, 168, 75, 0.3) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-testid="stChatInput"] textarea:focus {
+    border-color: var(--gold-primary) !important;
+    box-shadow: 0 0 0 2px rgba(212, 168, 75, 0.2) !important;
+}
+
+/* Chat Messages */
+[data-testid="stChatMessage"] {
+    background: var(--bg-card) !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Dataframes */
+[data-testid="stDataFrame"] {
+    border-radius: var(--radius-md) !important;
+    overflow: hidden !important;
+}
+
+[data-testid="stDataFrame"] table {
+    background: var(--bg-card) !important;
+}
+
+[data-testid="stDataFrame"] th {
+    background: var(--gold-dark) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Expander */
+[data-testid="stExpander"] {
+    background: var(--bg-card) !important;
+    border: 1px solid rgba(212, 168, 75, 0.2) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+[data-testid="stExpander"] summary {
+    color: var(--gold-light) !important;
+}
+
+/* Selectbox */
+[data-testid="stSelectbox"] > div > div {
+    background: var(--bg-input) !important;
+    border: 1px solid rgba(212, 168, 75, 0.3) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+/* Divider */
+hr {
+    border-color: rgba(212, 168, 75, 0.2) !important;
+}
+
+/* Tabs */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+    background: var(--bg-card) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+[data-testid="stTabs"] button[aria-selected="true"] {
+    background: var(--gold-primary) !important;
+    color: var(--bg-dark) !important;
+}
+
+/* Code Blocks */
+[data-testid="stCode"] {
+    background: var(--bg-input) !important;
+    border: 1px solid rgba(212, 168, 75, 0.2) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--gold-dark);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gold-primary);
+}
+
+/* Caption/Footer */
+.stCaption, [data-testid="stCaption"] {
+    color: var(--text-muted) !important;
+}
+
+/* Spinner */
+[data-testid="stSpinner"] {
+    color: var(--gold-primary) !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # --- LOAD DATA ---
 @st.cache_data
@@ -42,8 +279,8 @@ def load_data():
     return filings, facts, ratios, analytics
 
 # --- TITLE ---
-st.title("📊 Saudi Financial Database Chat")
-st.markdown("Ask questions about Saudi listed companies' financial data in natural language.")
+st.markdown('<h1 class="brand-title">⚡ رعد | Ra\'d AI</h1>', unsafe_allow_html=True)
+st.markdown('<p class="brand-subtitle">Saudi Exchange Market Analysis | حلل السوق - Facts بدون فلسفة</p>', unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -183,4 +420,4 @@ if prompt:
 
 # --- FOOTER ---
 st.divider()
-st.caption("Powered by PandasAI + OpenRouter/Gemini | Data: Saudi Tadawul XBRL Financials")
+st.caption("⚡ رعد AI | Powered by PandasAI + Gemini | Saudi Exchange XBRL Data | Early Access")
