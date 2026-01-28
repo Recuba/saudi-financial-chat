@@ -2,7 +2,6 @@
 Saudi Financial Database Chat UI
 ================================
 A Streamlit app for natural language querying of Saudi XBRL financial data.
-Deployed on Streamlit Cloud.
 """
 
 import streamlit as st
@@ -13,11 +12,9 @@ from pathlib import Path
 # Set up OpenRouter API from Streamlit secrets
 if "OPENROUTER_API_KEY" in st.secrets:
     os.environ["OPENROUTER_API_KEY"] = st.secrets["OPENROUTER_API_KEY"]
-else:
-    os.environ["OPENROUTER_API_KEY"] = "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"
 
-import pandasai as pai
-from pandasai_litellm import LiteLLM
+from pandasai import SmartDataframe
+from pandasai.llm import LiteLLM
 
 # Page config
 st.set_page_config(
@@ -29,7 +26,7 @@ st.set_page_config(
 # Initialize LLM
 @st.cache_resource
 def get_llm():
-    return LiteLLM(model="openrouter/google/gemini-3-flash-preview")
+    return LiteLLM(model="openrouter/google/gemini-2.0-flash-001")
 
 # Load data
 @st.cache_data
@@ -102,7 +99,6 @@ with st.sidebar:
         "What are the top 10 companies by revenue in 2024?",
         "Show average ROE by sector in 2023",
         "Which companies have debt to equity > 2?",
-        "Plot total assets trend for Almarai",
         "Compare net profit margins across sectors",
         "List companies with negative net profit in 2024"
     ]
@@ -123,8 +119,6 @@ st.divider()
 # Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        if message["role"] == "assistant" and "image" in message:
-            st.image(message["image"])
         st.write(message["content"])
 
 # Chat input
@@ -149,54 +143,22 @@ if prompt := st.chat_input("Ask a question about Saudi financial data..."):
 
                 selected_df = dataset_map[st.session_state.current_dataset]
 
-                # Save to temp CSV and load with PandasAI
-                import tempfile
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-                    selected_df.to_csv(f.name, index=False)
-                    temp_csv = f.name
-
-                df = pai.read_csv(temp_csv)
-
-                # Configure LLM
+                # Create SmartDataframe
                 llm = get_llm()
-                pai.config.set({"llm": llm})
+                sdf = SmartDataframe(selected_df, config={"llm": llm, "verbose": False})
 
                 # Execute query
-                result = df.chat(prompt)
-
-                # Clean up temp file
-                os.unlink(temp_csv)
+                result = sdf.chat(prompt)
 
                 # Display result
-                response_content = ""
-
-                if hasattr(result, 'value'):
-                    result_value = result.value
+                if isinstance(result, pd.DataFrame):
+                    st.dataframe(result, use_container_width=True)
+                    response_content = f"DataFrame with {len(result)} rows"
                 else:
-                    result_value = result
+                    st.write(result)
+                    response_content = str(result)
 
-                # Check if it's a plot/image path
-                if isinstance(result_value, str) and (result_value.endswith('.png') or 'chart' in result_value.lower()):
-                    if os.path.exists(result_value):
-                        st.image(result_value)
-                        response_content = "Chart generated successfully"
-                        st.session_state.messages.append({
-                            "role": "assistant",
-                            "content": response_content,
-                            "image": result_value
-                        })
-                    else:
-                        st.write(result_value)
-                        response_content = str(result_value)
-                        st.session_state.messages.append({"role": "assistant", "content": response_content})
-                elif isinstance(result_value, pd.DataFrame):
-                    st.dataframe(result_value, use_container_width=True)
-                    response_content = f"DataFrame with {len(result_value)} rows"
-                    st.session_state.messages.append({"role": "assistant", "content": response_content})
-                else:
-                    st.write(result_value)
-                    response_content = str(result_value)
-                    st.session_state.messages.append({"role": "assistant", "content": response_content})
+                st.session_state.messages.append({"role": "assistant", "content": response_content})
 
             except Exception as e:
                 error_msg = f"Error: {str(e)}"
