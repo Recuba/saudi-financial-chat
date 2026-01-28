@@ -5,13 +5,25 @@ A Streamlit app for natural language querying of Saudi XBRL financial data.
 """
 
 import pandasai as pai
-from pandasai_litellm.litellm import LiteLLM
+from pandasai_litellm import LiteLLM
 import pandas as pd
 import streamlit as st
 import io
 from PIL import Image
 import os
 from pathlib import Path
+
+# --- PAGE CONFIG (must be first Streamlit command) ---
+st.set_page_config(
+    page_title="Saudi Financial Database",
+    page_icon="📊",
+    layout="wide",
+)
+
+# --- SECRETS VALIDATION ---
+if "OPENROUTER_API_KEY" not in st.secrets:
+    st.error("Missing OPENROUTER_API_KEY in Streamlit secrets. Please configure it in your Streamlit Cloud app settings.")
+    st.stop()
 
 # --- LLM CONFIGURATION ---
 llm = LiteLLM(
@@ -23,13 +35,6 @@ llm = LiteLLM(
 pai.config.set({
     "llm": llm,
 })
-
-# --- PAGE CONFIG ---
-st.set_page_config(
-    page_title="Saudi Financial Database",
-    page_icon="📊",
-    layout="wide",
-)
 
 # --- LOAD DATA ---
 @st.cache_data
