@@ -24,77 +24,242 @@ st.set_page_config(
 # --- CUSTOM CSS FOR PREMIUM DARK/GOLD THEME ---
 st.markdown("""
 <style>
-    /* Import Google Fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
 
-    /* Root variables */
-    :root {
-        --gold-primary: #D4A84B;
-        --gold-light: #E8C872;
-        --gold-dark: #B8860B;
-        --bg-dark: #0E0E0E;
-        --bg-card: #1A1A1A;
-        --bg-card-hover: #252525;
-        --text-primary: #FFFFFF;
-        --text-secondary: #B0B0B0;
+    /* ===== GLOBAL OVERRIDES ===== */
+    html, body, .stApp, [data-testid="stApp"] {
+        background: #0A0A0A !important;
+        color: #E8E8E8 !important;
+        font-family: 'Tajawal', sans-serif !important;
     }
 
-    /* Main container */
     .stApp {
-        background: linear-gradient(180deg, #0E0E0E 0%, #1A1A1A 100%);
+        background: radial-gradient(ellipse at 20% 0%, rgba(212,168,75,0.06) 0%, transparent 50%),
+                    radial-gradient(ellipse at 80% 100%, rgba(212,168,75,0.04) 0%, transparent 50%),
+                    #0A0A0A !important;
     }
 
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* Hide default Streamlit chrome */
+    #MainMenu, footer, header[data-testid="stHeader"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
 
-    /* Header styling */
+    /* ===== SIDEBAR ===== */
+    [data-testid="stSidebar"],
+    [data-testid="stSidebar"] > div,
+    [data-testid="stSidebarContent"],
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #111111 0%, #0A0A0A 100%) !important;
+        border-right: 1px solid rgba(212,168,75,0.15) !important;
+    }
+
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] .stMarkdown h1,
+    [data-testid="stSidebar"] .stMarkdown h2,
+    [data-testid="stSidebar"] .stMarkdown h3,
+    [data-testid="stSidebar"] .stMarkdown h4 {
+        color: #D4A84B !important;
+        font-family: 'Tajawal', sans-serif !important;
+    }
+
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #C0C0C0 !important;
+    }
+
+    /* ===== METRIC CARDS ===== */
+    [data-testid="stMetric"] {
+        background: linear-gradient(145deg, #151515, #1E1E1E) !important;
+        border: 1px solid rgba(212,168,75,0.2) !important;
+        border-radius: 12px !important;
+        padding: 1rem !important;
+        transition: border-color 0.3s, box-shadow 0.3s !important;
+    }
+
+    [data-testid="stMetric"]:hover {
+        border-color: rgba(212,168,75,0.5) !important;
+        box-shadow: 0 0 20px rgba(212,168,75,0.1) !important;
+    }
+
+    [data-testid="stMetric"] label,
+    [data-testid="stMetric"] [data-testid="stMetricLabel"] {
+        color: #999 !important;
+        font-size: 0.85rem !important;
+    }
+
+    [data-testid="stMetric"] [data-testid="stMetricValue"] {
+        color: #D4A84B !important;
+        font-weight: 700 !important;
+        font-size: 1.8rem !important;
+    }
+
+    /* ===== BUTTONS ===== */
+    .stButton > button,
+    button[data-testid="stBaseButton-secondary"],
+    [data-testid="stBaseButton-secondary"] {
+        background: linear-gradient(145deg, #1A1A1A, #222) !important;
+        border: 1px solid rgba(212,168,75,0.25) !important;
+        color: #E0E0E0 !important;
+        border-radius: 10px !important;
+        font-family: 'Tajawal', sans-serif !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+        width: 100% !important;
+    }
+
+    .stButton > button:hover,
+    button[data-testid="stBaseButton-secondary"]:hover {
+        background: linear-gradient(145deg, #222, #1A1A1A) !important;
+        border-color: #D4A84B !important;
+        color: #D4A84B !important;
+        box-shadow: 0 4px 15px rgba(212,168,75,0.15) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    .stButton > button:active {
+        transform: translateY(0px) !important;
+    }
+
+    /* ===== CHAT INPUT ===== */
+    [data-testid="stChatInput"],
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stChatInput"] > div {
+        background: #151515 !important;
+        border-color: rgba(212,168,75,0.25) !important;
+        color: #E0E0E0 !important;
+        border-radius: 12px !important;
+    }
+
+    [data-testid="stChatInput"]:focus-within {
+        border-color: #D4A84B !important;
+        box-shadow: 0 0 15px rgba(212,168,75,0.15) !important;
+    }
+
+    /* ===== CHAT MESSAGES ===== */
+    [data-testid="stChatMessage"],
+    .stChatMessage {
+        background: #141414 !important;
+        border: 1px solid rgba(212,168,75,0.1) !important;
+        border-radius: 14px !important;
+        padding: 1.2rem !important;
+    }
+
+    /* ===== EXPANDER ===== */
+    [data-testid="stExpander"],
+    .streamlit-expanderHeader {
+        border: 1px solid rgba(212,168,75,0.15) !important;
+        border-radius: 10px !important;
+    }
+
+    [data-testid="stExpander"] summary,
+    .streamlit-expanderHeader {
+        background: #151515 !important;
+        color: #E0E0E0 !important;
+        font-family: 'Tajawal', sans-serif !important;
+    }
+
+    [data-testid="stExpander"] summary:hover {
+        color: #D4A84B !important;
+    }
+
+    /* ===== DATAFRAME ===== */
+    [data-testid="stDataFrame"],
+    .stDataFrame {
+        border: 1px solid rgba(212,168,75,0.15) !important;
+        border-radius: 10px !important;
+    }
+
+    /* ===== TABS ===== */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 4px !important;
+        background: #141414 !important;
+        border-radius: 10px !important;
+        padding: 4px !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background: transparent !important;
+        border-radius: 8px !important;
+        color: #999 !important;
+        font-family: 'Tajawal', sans-serif !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #D4A84B, #B8860B) !important;
+        color: #0A0A0A !important;
+        font-weight: 600 !important;
+    }
+
+    /* ===== SELECTBOX ===== */
+    [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+        background: #151515 !important;
+        border-color: rgba(212,168,75,0.25) !important;
+        color: #E0E0E0 !important;
+    }
+
+    /* ===== DIVIDERS ===== */
+    hr, [data-testid="stSeparator"] {
+        border-color: rgba(212,168,75,0.12) !important;
+    }
+
+    /* ===== CODE BLOCKS ===== */
+    .stCodeBlock, [data-testid="stCodeBlock"], pre, code {
+        border: 1px solid rgba(212,168,75,0.12) !important;
+        border-radius: 8px !important;
+    }
+
+    /* ===== SPINNER ===== */
+    .stSpinner > div {
+        border-top-color: #D4A84B !important;
+    }
+
+    /* ===== ALERTS ===== */
+    [data-testid="stAlert"] {
+        border-radius: 10px !important;
+    }
+
+    /* ===== BRANDED HEADER ===== */
     .main-header {
         text-align: center;
-        padding: 2rem 0;
-        background: linear-gradient(135deg, rgba(212, 168, 75, 0.1) 0%, rgba(14, 14, 14, 0) 50%);
+        padding: 2.5rem 1rem;
+        background: radial-gradient(ellipse at center top, rgba(212,168,75,0.12) 0%, transparent 60%) !important;
+        border: 1px solid rgba(212,168,75,0.08);
         border-radius: 20px;
         margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .main-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: radial-gradient(circle at 20% 80%, rgba(212, 168, 75, 0.15) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 20%, rgba(212, 168, 75, 0.1) 0%, transparent 50%);
-        pointer-events: none;
     }
 
     .brand-title {
         font-family: 'Tajawal', sans-serif;
-        font-size: 4rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #D4A84B 0%, #E8C872 50%, #D4A84B 100%);
+        font-size: 4.5rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #C49A3C 0%, #F0D078 40%, #D4A84B 70%, #E8C872 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
         margin: 0;
-        text-shadow: 0 0 40px rgba(212, 168, 75, 0.3);
+        line-height: 1.2;
+        filter: drop-shadow(0 0 30px rgba(212,168,75,0.3));
     }
 
     .brand-subtitle {
         font-family: 'Tajawal', sans-serif;
-        font-size: 1.2rem;
-        color: #B0B0B0;
+        font-size: 1.1rem;
+        color: #888 !important;
         margin-top: 0.5rem;
-        letter-spacing: 2px;
+        letter-spacing: 4px;
+        text-transform: uppercase;
     }
 
     .brand-tagline {
         font-family: 'Tajawal', sans-serif;
-        font-size: 1rem;
-        color: #D4A84B;
+        font-size: 1.05rem;
+        color: #D4A84B !important;
         margin-top: 1rem;
         font-weight: 500;
     }
@@ -102,180 +267,53 @@ st.markdown("""
     .early-access-badge {
         display: inline-block;
         background: linear-gradient(135deg, #D4A84B 0%, #B8860B 100%);
-        color: #0E0E0E;
-        padding: 0.4rem 1.5rem;
+        color: #0A0A0A;
+        padding: 0.35rem 1.5rem;
         border-radius: 20px;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 700;
         letter-spacing: 3px;
-        margin-top: 1rem;
+        margin-top: 1.2rem;
         text-transform: uppercase;
     }
 
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #141414 0%, #0E0E0E 100%);
-        border-right: 1px solid rgba(212, 168, 75, 0.2);
-    }
-
-    [data-testid="stSidebar"] .stMarkdown h1,
-    [data-testid="stSidebar"] .stMarkdown h2,
-    [data-testid="stSidebar"] .stMarkdown h3 {
-        color: #D4A84B !important;
-        font-family: 'Tajawal', sans-serif;
-    }
-
-    /* Metric cards */
-    [data-testid="stMetric"] {
-        background: linear-gradient(135deg, #1A1A1A 0%, #252525 100%);
-        border: 1px solid rgba(212, 168, 75, 0.2);
-        border-radius: 12px;
-        padding: 1rem;
-        transition: all 0.3s ease;
-    }
-
-    [data-testid="stMetric"]:hover {
-        border-color: rgba(212, 168, 75, 0.5);
-        box-shadow: 0 4px 20px rgba(212, 168, 75, 0.15);
-    }
-
-    [data-testid="stMetric"] label {
-        color: #B0B0B0 !important;
-    }
-
-    [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #D4A84B !important;
-        font-weight: 700;
-    }
-
-    /* Buttons */
-    .stButton > button {
-        background: linear-gradient(135deg, #1A1A1A 0%, #252525 100%);
-        border: 1px solid rgba(212, 168, 75, 0.3);
-        color: #FFFFFF;
-        border-radius: 10px;
-        padding: 0.6rem 1.2rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        width: 100%;
-    }
-
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #252525 0%, #1A1A1A 100%);
-        border-color: #D4A84B;
-        color: #D4A84B;
-        box-shadow: 0 4px 15px rgba(212, 168, 75, 0.2);
-        transform: translateY(-2px);
-    }
-
-    /* Chat input */
-    [data-testid="stChatInput"] {
-        border-color: rgba(212, 168, 75, 0.3) !important;
-    }
-
-    [data-testid="stChatInput"]:focus-within {
-        border-color: #D4A84B !important;
-        box-shadow: 0 0 10px rgba(212, 168, 75, 0.2);
-    }
-
-    /* Chat messages */
-    [data-testid="stChatMessage"] {
-        background: #1A1A1A;
-        border: 1px solid rgba(212, 168, 75, 0.1);
-        border-radius: 15px;
-        padding: 1rem;
-    }
-
-    /* Expander */
-    .streamlit-expanderHeader {
-        background: #1A1A1A;
-        border: 1px solid rgba(212, 168, 75, 0.2);
-        border-radius: 10px;
-        color: #FFFFFF;
-    }
-
-    .streamlit-expanderHeader:hover {
-        border-color: #D4A84B;
-    }
-
-    /* Dataframe */
-    [data-testid="stDataFrame"] {
-        border: 1px solid rgba(212, 168, 75, 0.2);
-        border-radius: 10px;
-    }
-
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background: #1A1A1A;
-        border-radius: 10px;
-        padding: 0.5rem;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        background: transparent;
-        border-radius: 8px;
-        color: #B0B0B0;
-        padding: 0.5rem 1rem;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #D4A84B 0%, #B8860B 100%);
-        color: #0E0E0E !important;
-    }
-
-    /* Selectbox */
-    [data-testid="stSelectbox"] > div > div {
-        background: #1A1A1A;
-        border-color: rgba(212, 168, 75, 0.3);
-    }
-
-    /* Divider */
-    hr {
-        border-color: rgba(212, 168, 75, 0.2);
-    }
-
-    /* Code blocks */
-    .stCodeBlock {
-        background: #141414 !important;
-        border: 1px solid rgba(212, 168, 75, 0.2);
-    }
-
-    /* Section headers */
+    /* ===== SECTION HEADERS ===== */
     .section-header {
-        color: #D4A84B;
+        color: #D4A84B !important;
         font-family: 'Tajawal', sans-serif;
         font-size: 1.3rem;
         font-weight: 600;
         margin: 1.5rem 0 1rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
     }
 
-    /* Footer */
+    /* ===== FOOTER ===== */
     .custom-footer {
         text-align: center;
         padding: 2rem 0;
-        color: #666;
+        color: #555 !important;
         font-size: 0.85rem;
-        border-top: 1px solid rgba(212, 168, 75, 0.1);
+        border-top: 1px solid rgba(212,168,75,0.1);
         margin-top: 2rem;
     }
 
-    .custom-footer a {
-        color: #D4A84B;
-        text-decoration: none;
+    .custom-footer strong {
+        color: #999 !important;
     }
 
-    /* Spinner */
-    .stSpinner > div {
-        border-top-color: #D4A84B !important;
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
     }
-
-    /* Success/Error messages */
-    .stAlert {
-        border-radius: 10px;
+    ::-webkit-scrollbar-track {
+        background: #0A0A0A;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: rgba(212,168,75,0.3);
+        border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(212,168,75,0.5);
     }
 </style>
 """, unsafe_allow_html=True)
