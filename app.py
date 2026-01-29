@@ -5,6 +5,15 @@ A Streamlit app for natural language querying of Saudi XBRL financial data.
 """
 
 import streamlit as st
+import logging
+import html
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # --- PAGE CONFIG (must be first Streamlit command) ---
 st.set_page_config(
@@ -25,7 +34,7 @@ from components.chat import (
 )
 from components.error_display import render_api_key_setup_guide
 from utils.data_loader import load_data
-from utils.llm_config import initialize_llm, check_llm_ready
+from utils.llm_config import initialize_llm, check_llm_ready, clear_model_cache
 
 # --- ASSETS ---
 LOGO_PATH = Path(__file__).parent / "assets" / "logo.png"
@@ -36,9 +45,14 @@ st.markdown(get_error_css(), unsafe_allow_html=True)
 
 # --- INITIALIZE LLM ---
 llm, llm_error = initialize_llm()
+if llm_error:
+    logger.warning(f"LLM initialization warning: {llm_error}")
 
 # --- INITIALIZE CHAT HISTORY ---
-initialize_chat_history()
+try:
+    initialize_chat_history()
+except Exception as e:
+    logger.error(f"Failed to initialize chat history: {e}")
 
 # --- LOGO ---
 col1, col2, col3 = st.columns([1, 6, 1])
@@ -57,7 +71,14 @@ dataset_choice, model_changed = render_sidebar()
 
 # --- RE-INITIALIZE LLM IF MODEL CHANGED ---
 if model_changed:
+    logger.info("Model changed, reinitializing LLM")
+    clear_model_cache()  # Clear cache to ensure fresh model list
     llm, llm_error = initialize_llm()
+    if llm_error:
+        st.error(f"Failed to initialize model: {html.escape(llm_error)}")
+    else:
+        st.success("Model updated successfully!", icon="✅")
+        st.rerun()
 
 # --- MAIN CONTENT ---
 st.divider()
@@ -69,35 +90,59 @@ else:
     # Load data
     try:
         data = load_data()
-        selected_df = data[dataset_choice]
 
-        # Data preview
-        with st.expander("Data Preview", expanded=False):
-            st.dataframe(selected_df.head(10), use_container_width=True)
+        # Safe dataset access
+        selected_df = data.get(dataset_choice)
+        if selected_df is None:
+            st.error(f"Dataset '{dataset_choice}' not found. Available: {list(data.keys())}")
+            logger.error(f"Dataset '{dataset_choice}' not found in loaded data")
+        else:
+            # Data preview
+            with st.expander("Data Preview", expanded=False):
+                st.dataframe(selected_df.head(10), use_container_width=True)
+                st.caption(f"Showing 10 of {len(selected_df):,} rows")
 
-        # Example questions
-        example_query = render_example_questions(max_visible=3)
-        if example_query:
-            st.session_state.query = example_query
+            # Example questions
+            example_query = render_example_questions(max_visible=3)
+            if example_query:
+                # Store query for processing
+                st.session_state.query = example_query
+                st.rerun()  # Rerun to process the query
 
-        st.divider()
+            st.divider()
 
-        # Chat input
-        prompt = render_chat_input()
+            # Chat input
+            prompt = render_chat_input()
 
-        # Check for button-triggered query
-        if "query" in st.session_state and st.session_state.query:
-            prompt = st.session_state.query
-            st.session_state.query = None
+            # Check for button-triggered query (from example or retry)
+            if "query" in st.session_state and st.session_state.query:
+                prompt = st.session_state.query
+                st.session_state.query = None  # Clear to prevent re-processing
 
-        # Process query
-        if prompt:
-            render_chat_with_response(prompt, selected_df)
+            # Process query
+            if prompt:
+                logger.info(f"Processing user query: {prompt[:50]}...")
+                render_chat_with_response(prompt, selected_df)
 
     except FileNotFoundError as e:
+        logger.error(f"Data files not found: {e}")
         st.error("Data files not found. Please ensure data files are in the 'data' directory.")
+        with st.expander("Technical Details"):
+            st.code(str(e))
+
+    except PermissionError as e:
+        logger.error(f"Permission error accessing data: {e}")
+        st.error("Permission denied accessing data files.")
+
+    except ValueError as e:
+        logger.error(f"Data validation error: {e}")
+        st.error(f"Data error: {html.escape(str(e))}")
+
     except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+        logger.error(f"Unexpected error: {e}", exc_info=True)
+        st.error(f"An unexpected error occurred: {html.escape(str(e))}")
+        with st.expander("Technical Details"):
+            st.code(str(e))
 
 # --- FOOTER ---
 st.divider()

@@ -5,8 +5,9 @@ Provides enhanced chat input, message display, and response handling.
 
 import io
 import os
+import html
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, List
 import logging
 
 try:
@@ -37,8 +38,14 @@ def format_response(response: Any) -> Dict[str, Any]:
 
     Returns:
         Dictionary with type, data, code, and optional message
+
+    Example:
+        response = df.chat("What is the average revenue?")
+        formatted = format_response(response)
+        # Returns: {"type": "text", "data": "42.5", "code": "...", "message": None}
     """
     if response is None:
+        logger.warning("Received None response from PandasAI")
         return {
             "type": "error",
             "data": None,
@@ -50,14 +57,26 @@ def format_response(response: Any) -> Dict[str, Any]:
     value = getattr(response, "value", None)
     code = getattr(response, "last_code_executed", "")
 
+    logger.debug(f"Processing response type: {response_type}")
+
     if response_type == "dataframe":
         if pd is not None:
-            return {
-                "type": "dataframe",
-                "data": value if isinstance(value, pd.DataFrame) else pd.DataFrame(value) if value else pd.DataFrame(),
-                "code": code,
-                "message": None
-            }
+            try:
+                df_value = value if isinstance(value, pd.DataFrame) else pd.DataFrame(value) if value else pd.DataFrame()
+                return {
+                    "type": "dataframe",
+                    "data": df_value,
+                    "code": code,
+                    "message": None
+                }
+            except Exception as e:
+                logger.error(f"Error converting response to DataFrame: {e}")
+                return {
+                    "type": "error",
+                    "data": None,
+                    "code": code,
+                    "message": f"Failed to create DataFrame: {html.escape(str(e))}"
+                }
         else:
             return {
                 "type": "dataframe",
@@ -83,6 +102,7 @@ def format_response(response: Any) -> Dict[str, Any]:
         }
 
     else:
+        logger.debug(f"Unknown response type '{response_type}', treating as text")
         return {
             "type": "text",
             "data": str(value) if value else "No data returned",
@@ -126,6 +146,34 @@ def render_user_message(query: str) -> None:
         st.write(query)
 
 
+def _safe_remove_file(filepath: str) -> bool:
+    """Safely remove a file with proper error handling.
+
+    Args:
+        filepath: Path to the file to remove
+
+    Returns:
+        True if file was removed, False otherwise
+    """
+    if not filepath:
+        return False
+
+    try:
+        if os.path.exists(filepath) and os.path.isfile(filepath):
+            os.remove(filepath)
+            logger.debug(f"Removed temporary file: {filepath}")
+            return True
+        else:
+            logger.debug(f"File does not exist or is not a file: {filepath}")
+            return False
+    except PermissionError as e:
+        logger.warning(f"Permission denied removing file {filepath}: {e}")
+        return False
+    except OSError as e:
+        logger.error(f"Error removing file {filepath}: {e}")
+        return False
+
+
 def render_ai_response(response_data: Dict[str, Any]) -> None:
     """Render an AI response in the chat.
 
@@ -135,19 +183,24 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
     if st is None:
         raise RuntimeError("Streamlit is required to render AI response")
 
-    response_type = response_data["type"]
-    data = response_data["data"]
+    response_type = response_data.get("type", "unknown")
+    data = response_data.get("data")
     code = response_data.get("code", "")
 
     if response_type == "error":
-        st.error(response_data.get("message", "An error occurred"))
+        error_msg = response_data.get("message", "An error occurred")
+        st.error(html.escape(str(error_msg)))
         return
 
     tab_result, tab_code = st.tabs(["Result", "Code"])
 
     with tab_result:
         if response_type == "dataframe":
-            st.dataframe(data, use_container_width=True, hide_index=True)
+            try:
+                st.dataframe(data, use_container_width=True, hide_index=True)
+            except Exception as e:
+                logger.error(f"Error displaying dataframe: {e}")
+                st.error(f"Could not display data: {html.escape(str(e))}")
 
         elif response_type == "chart":
             try:
@@ -155,20 +208,36 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
                     # Chart data can be file path or bytes
                     if isinstance(data, bytes):
                         img = Image.open(io.BytesIO(data))
+                    elif isinstance(data, str):
+                        if os.path.exists(data):
+                            with open(data, "rb") as f:
+                                img_bytes = f.read()
+                            img = Image.open(io.BytesIO(img_bytes))
+                            # Clean up temp file safely
+                            _safe_remove_file(data)
+                        else:
+                            st.error(f"Chart file not found: {html.escape(data)}")
+                            return
                     else:
-                        with open(data, "rb") as f:
-                            img_bytes = f.read()
-                        img = Image.open(io.BytesIO(img_bytes))
-                        # Clean up temp file
-                        os.remove(data)
+                        st.error("Invalid chart data format")
+                        return
+
                     st.image(img, use_container_width=True)
                 else:
-                    st.error("Unable to display chart: PIL not available")
+                    if Image is None:
+                        st.error("PIL/Pillow is required to display charts")
+                    else:
+                        st.warning("No chart data available")
             except Exception as e:
-                st.error(f"Failed to display chart: {e}")
+                logger.error(f"Error displaying chart: {e}")
+                st.error(f"Failed to display chart: {html.escape(str(e))}")
 
         elif response_type == "text":
-            st.write(data)
+            st.write(data if data else "No response text")
+
+        else:
+            logger.warning(f"Unknown response type for display: {response_type}")
+            st.write(str(data) if data else "No data")
 
     with tab_code:
         if code:
@@ -191,7 +260,25 @@ def process_query(
 
     Returns:
         Formatted response dict or None on error
+
+    Example:
+        response = process_query("What is the average revenue?", df)
+        if response["type"] == "error":
+            print(f"Error: {response['message']}")
+        else:
+            print(f"Result: {response['data']}")
     """
+    if not query or not query.strip():
+        logger.warning("Empty query received")
+        return {
+            "type": "error",
+            "data": None,
+            "code": None,
+            "message": "Please enter a query"
+        }
+
+    logger.info(f"Processing query: {query[:100]}...")
+
     try:
         import pandasai as pai
         df = pai.DataFrame(dataset)
@@ -200,22 +287,60 @@ def process_query(
 
         # If chart, convert file path to bytes for history storage
         if response_data["type"] == "chart" and response_data["data"]:
-            try:
-                with open(response_data["data"], "rb") as f:
-                    chart_bytes = f.read()
-                os.remove(response_data["data"])  # Clean up temp file
-                response_data["data"] = chart_bytes
-            except Exception:
-                pass  # Keep file path if conversion fails
+            filepath = response_data["data"]
+            if isinstance(filepath, str) and os.path.exists(filepath):
+                try:
+                    with open(filepath, "rb") as f:
+                        chart_bytes = f.read()
+                    _safe_remove_file(filepath)
+                    response_data["data"] = chart_bytes
+                    logger.debug("Converted chart file to bytes for storage")
+                except IOError as e:
+                    logger.warning(f"Could not read chart file {filepath}: {e}")
+                    # Keep file path if conversion fails
 
+        logger.info(f"Query processed successfully, response type: {response_data['type']}")
         return response_data
 
+    except ImportError as e:
+        error_msg = f"Missing required package: {e}"
+        logger.error(error_msg)
+        if on_error:
+            try:
+                on_error(error_msg)
+            except Exception as callback_error:
+                logger.error(f"Error callback failed: {callback_error}")
+        return {
+            "type": "error",
+            "data": None,
+            "code": None,
+            "message": error_msg
+        }
+
+    except ValueError as e:
+        error_msg = f"Invalid query or data: {html.escape(str(e))}"
+        logger.error(f"Query validation error: {e}")
+        if on_error:
+            try:
+                on_error(str(e))
+            except Exception as callback_error:
+                logger.error(f"Error callback failed: {callback_error}")
+        return {
+            "type": "error",
+            "data": None,
+            "code": None,
+            "message": error_msg
+        }
+
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Query processing error: {error_msg}")
+        error_msg = html.escape(str(e))
+        logger.error(f"Query processing error: {e}", exc_info=True)
 
         if on_error:
-            on_error(error_msg)
+            try:
+                on_error(str(e))
+            except Exception as callback_error:
+                logger.error(f"Error callback failed: {callback_error}")
 
         return {
             "type": "error",
@@ -242,11 +367,15 @@ def render_chat_with_response(
 
     render_user_message(query)
 
+    # Get dataset name for more informative spinner
+    dataset_name = getattr(dataset, 'name', 'data')
+
     with st.chat_message("ai"):
-        with st.spinner("Analyzing data..."):
+        with st.spinner(f"Analyzing {dataset_name}..."):
             response = process_query(query, dataset)
 
         if response is None:
+            logger.error("process_query returned None unexpectedly")
             response = {
                 "type": "error",
                 "data": None,
@@ -259,12 +388,13 @@ def render_chat_with_response(
             render_error_banner(error_info, show_details=True)
 
             if show_retry:
-                if st.button("Retry Query", key="retry_query"):
+                if st.button("Retry Query", key=f"retry_{hash(query)}"):
                     st.session_state.query = query
                     st.rerun()
         else:
             render_ai_response(response)
-            st.caption(f"Response at {datetime.now().strftime('%H:%M:%S')}")
+            # Show timestamp with timezone info
+            st.caption(f"Response at {datetime.now().strftime('%H:%M:%S')} (local time)")
 
 
 def initialize_chat_history() -> None:
@@ -274,6 +404,7 @@ def initialize_chat_history() -> None:
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+        logger.debug("Initialized empty chat history")
 
 
 def add_to_chat_history(role: str, content: Any, response_data: Optional[Dict[str, Any]] = None) -> None:
@@ -299,9 +430,10 @@ def add_to_chat_history(role: str, content: Any, response_data: Optional[Dict[st
         entry["response_data"] = response_data
 
     st.session_state.chat_history.append(entry)
+    logger.debug(f"Added {role} message to chat history")
 
 
-def get_chat_history() -> list:
+def get_chat_history() -> List[Dict[str, Any]]:
     """Get the current chat history.
 
     Returns:
@@ -320,6 +452,33 @@ def clear_chat_history() -> None:
         raise RuntimeError("Streamlit is required to clear chat history")
 
     st.session_state.chat_history = []
+    logger.info("Chat history cleared")
+
+
+def export_chat_history() -> Optional[str]:
+    """Export chat history as JSON string.
+
+    Returns:
+        JSON string of chat history or None if empty
+    """
+    import json
+
+    history = get_chat_history()
+    if not history:
+        return None
+
+    # Filter out binary data (charts) for export
+    exportable_history = []
+    for entry in history:
+        export_entry = entry.copy()
+        if "response_data" in export_entry:
+            response_copy = export_entry["response_data"].copy()
+            if response_copy.get("type") == "chart":
+                response_copy["data"] = "[chart data not exported]"
+            export_entry["response_data"] = response_copy
+        exportable_history.append(export_entry)
+
+    return json.dumps(exportable_history, indent=2, default=str)
 
 
 def render_chat_history() -> None:
@@ -363,14 +522,17 @@ def render_clear_history_button() -> bool:
             subcol1, subcol2 = st.columns(2)
             with subcol1:
                 if st.button("Yes", key="confirm_yes", type="primary"):
-                    clear_chat_history()  # Use the function instead of direct assignment
+                    clear_chat_history()
                     st.session_state.confirm_clear = False
+                    st.rerun()  # Refresh UI after clearing
                     return True
             with subcol2:
                 if st.button("No", key="confirm_no"):
                     st.session_state.confirm_clear = False
+                    st.rerun()
         else:
             if st.button("Clear", key="clear_history"):
                 st.session_state.confirm_clear = True
+                st.rerun()
 
     return False

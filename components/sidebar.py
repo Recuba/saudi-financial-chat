@@ -4,7 +4,9 @@ Provides database info, dataset selection, model selection, and column reference
 """
 
 import streamlit as st
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List, Optional
+import logging
+
 from utils.data_loader import (
     load_data,
     get_dataset_info,
@@ -17,42 +19,94 @@ from utils.llm_config import (
     get_model_options,
     get_selected_model,
     set_selected_model,
+    get_model_fetch_error,
+    clear_model_cache,
     DEFAULT_MODEL,
 )
+
+logger = logging.getLogger(__name__)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _get_cached_unique_values(dataset_name: str, column_name: str) -> List[str]:
+    """Get cached unique values for a column.
+
+    Args:
+        dataset_name: Name of the dataset
+        column_name: Name of the column
+
+    Returns:
+        Sorted list of unique values
+    """
+    try:
+        data = load_data()
+        df = data.get(dataset_name)
+        if df is not None and column_name in df.columns:
+            return sorted(df[column_name].unique().tolist())
+        return []
+    except Exception as e:
+        logger.error(f"Error getting unique values for {dataset_name}.{column_name}: {e}")
+        return []
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _get_cached_column_count(dataset_name: str, column_name: str) -> int:
+    """Get cached count of unique values for a column.
+
+    Args:
+        dataset_name: Name of the dataset
+        column_name: Name of the column
+
+    Returns:
+        Count of unique values
+    """
+    try:
+        data = load_data()
+        df = data.get(dataset_name)
+        if df is not None and column_name in df.columns:
+            return df[column_name].nunique()
+        return 0
+    except Exception as e:
+        logger.error(f"Error counting unique values for {dataset_name}.{column_name}: {e}")
+        return 0
 
 
 def render_database_info() -> None:
     """Render the database information section with tooltips."""
     st.header("Database Info")
 
-    info = get_dataset_info()
+    try:
+        info = get_dataset_info()
 
-    # Create metrics with full values (no truncation)
-    col1, col2 = st.columns(2)
+        # Create metrics with full values (no truncation)
+        col1, col2 = st.columns(2)
 
-    with col1:
-        st.metric(
-            label="Companies",
-            value=f"{info['companies']:,}",
-            help="Unique companies in the database"
-        )
-        st.metric(
-            label="Metrics",
-            value=f"{info['metrics']:,}",
-            help="Unique financial metrics (e.g., revenue, assets)"
-        )
+        with col1:
+            st.metric(
+                label="Companies",
+                value=f"{info['companies']:,}",
+                help="Unique companies in the database"
+            )
+            st.metric(
+                label="Metrics",
+                value=f"{info['metrics']:,}",
+                help="Unique financial metrics (e.g., revenue, assets)"
+            )
 
-    with col2:
-        st.metric(
-            label="Periods",
-            value=f"{info['periods']:,}",
-            help="Total fiscal periods across all companies"
-        )
-        st.metric(
-            label="Ratios",
-            value=f"{info['ratios']:,}",
-            help="Calculated financial ratios (e.g., ROE, ROA)"
-        )
+        with col2:
+            st.metric(
+                label="Periods",
+                value=f"{info['periods']:,}",
+                help="Total fiscal periods across all companies"
+            )
+            st.metric(
+                label="Ratios",
+                value=f"{info['ratios']:,}",
+                help="Calculated financial ratios (e.g., ROE, ROA)"
+            )
+    except Exception as e:
+        logger.error(f"Error rendering database info: {e}")
+        st.error("Could not load database info")
 
 
 def render_dataset_selector() -> str:
@@ -83,6 +137,22 @@ def render_dataset_selector() -> str:
     return dataset_choice
 
 
+def _filter_columns(columns: List[str], search_term: str) -> List[str]:
+    """Filter columns by search term.
+
+    Args:
+        columns: List of column names
+        search_term: Search string (case-insensitive)
+
+    Returns:
+        Filtered list of columns
+    """
+    if not search_term:
+        return columns
+    search_lower = search_term.lower()
+    return [c for c in columns if search_lower in c.lower()]
+
+
 def render_column_reference(dataset_name: str) -> None:
     """Render available columns for the selected dataset.
 
@@ -91,41 +161,104 @@ def render_column_reference(dataset_name: str) -> None:
     """
     st.header("Available Columns")
 
-    data = load_data()
-    df = data[dataset_name]
+    try:
+        data = load_data()
+        df = data.get(dataset_name)
 
-    if dataset_name == "analytics":
-        cols = df.columns.tolist()
-        # Show grouped columns
-        with st.expander(f"View all {len(cols)} columns", expanded=False):
+        if df is None:
+            st.error(f"Dataset '{dataset_name}' not found")
+            return
+
+        # Search box for filtering columns
+        search_term = st.text_input(
+            "Search columns:",
+            placeholder="Type to filter...",
+            key=f"col_search_{dataset_name}",
+            help="Filter columns by name"
+        )
+
+        if dataset_name == "analytics":
+            cols = df.columns.tolist()
+
             # Group columns by category
-            company_cols = [c for c in cols if c in ['company_name', 'company_folder', 'sector', 'symbol', 'ticker', 'isin', 'sector_primary', 'industry']]
-            period_cols = [c for c in cols if c in ['period_end', 'fiscal_year', 'filing_id', 'currency', 'currency_code', 'rounding', 'scale_factor']]
+            company_cols = [c for c in cols if c in [
+                'company_name', 'company_folder', 'sector', 'symbol',
+                'ticker', 'isin', 'sector_primary', 'industry'
+            ]]
+            period_cols = [c for c in cols if c in [
+                'period_end', 'fiscal_year', 'filing_id', 'currency',
+                'currency_code', 'rounding', 'scale_factor'
+            ]]
             metric_cols = [c for c in cols if c not in company_cols + period_cols]
 
-            st.markdown("**Company Info:**")
-            st.code("\n".join(company_cols))
+            # Apply search filter
+            if search_term:
+                company_cols = _filter_columns(company_cols, search_term)
+                period_cols = _filter_columns(period_cols, search_term)
+                metric_cols = _filter_columns(metric_cols, search_term)
 
-            st.markdown("**Period Info:**")
-            st.code("\n".join(period_cols))
+            total_filtered = len(company_cols) + len(period_cols) + len(metric_cols)
 
-            st.markdown("**Financial Metrics:**")
-            st.code("\n".join(sorted(metric_cols)))
+            with st.expander(f"View columns ({total_filtered}/{len(cols)})", expanded=bool(search_term)):
+                if company_cols:
+                    st.markdown("**Company Info:**")
+                    st.code("\n".join(company_cols))
 
-    elif dataset_name == "filings":
-        st.code("\n".join(df.columns.tolist()))
+                if period_cols:
+                    st.markdown("**Period Info:**")
+                    st.code("\n".join(period_cols))
 
-    elif dataset_name == "facts":
-        st.markdown("**Columns:**")
-        st.code("\n".join(df.columns.tolist()))
-        with st.expander(f"Available Metrics ({df['metric'].nunique()})", expanded=False):
-            st.code("\n".join(sorted(df['metric'].unique().tolist())))
+                if metric_cols:
+                    st.markdown("**Financial Metrics:**")
+                    st.code("\n".join(sorted(metric_cols)))
 
-    elif dataset_name == "ratios":
-        st.markdown("**Columns:**")
-        st.code("\n".join(df.columns.tolist()))
-        with st.expander(f"Available Ratios ({df['ratio'].nunique()})", expanded=False):
-            st.code("\n".join(sorted(df['ratio'].unique().tolist())))
+                if not (company_cols or period_cols or metric_cols):
+                    st.info("No columns match your search")
+
+        elif dataset_name == "filings":
+            cols = df.columns.tolist()
+            filtered_cols = _filter_columns(cols, search_term)
+            with st.expander(f"View columns ({len(filtered_cols)}/{len(cols)})", expanded=bool(search_term)):
+                if filtered_cols:
+                    st.code("\n".join(filtered_cols))
+                else:
+                    st.info("No columns match your search")
+
+        elif dataset_name == "facts":
+            cols = df.columns.tolist()
+            filtered_cols = _filter_columns(cols, search_term)
+
+            st.markdown("**Columns:**")
+            st.code("\n".join(filtered_cols) if filtered_cols else "No matches")
+
+            metric_count = _get_cached_column_count("facts", "metric")
+            with st.expander(f"Available Metrics ({metric_count})", expanded=False):
+                metrics = _get_cached_unique_values("facts", "metric")
+                filtered_metrics = _filter_columns(metrics, search_term)
+                if filtered_metrics:
+                    st.code("\n".join(filtered_metrics))
+                else:
+                    st.info("No metrics match your search")
+
+        elif dataset_name == "ratios":
+            cols = df.columns.tolist()
+            filtered_cols = _filter_columns(cols, search_term)
+
+            st.markdown("**Columns:**")
+            st.code("\n".join(filtered_cols) if filtered_cols else "No matches")
+
+            ratio_count = _get_cached_column_count("ratios", "ratio")
+            with st.expander(f"Available Ratios ({ratio_count})", expanded=False):
+                ratios = _get_cached_unique_values("ratios", "ratio")
+                filtered_ratios = _filter_columns(ratios, search_term)
+                if filtered_ratios:
+                    st.code("\n".join(filtered_ratios))
+                else:
+                    st.info("No ratios match your search")
+
+    except Exception as e:
+        logger.error(f"Error rendering column reference: {e}")
+        st.error("Could not load column information")
 
 
 def render_model_selector() -> bool:
@@ -141,21 +274,33 @@ def render_model_selector() -> bool:
         st.warning("Configure API key first")
         return False
 
+    # Show any fetch errors
+    fetch_error = get_model_fetch_error()
+    if fetch_error:
+        st.warning(f"Using fallback models: {fetch_error}", icon="⚠️")
+
     # Get available models
     model_options = get_model_options(api_key)
 
+    # Safety check - ensure we have options
     if not model_options:
-        st.error("Could not fetch models")
-        return False
+        logger.error("No model options available, using default")
+        model_options = {DEFAULT_MODEL: "Gemini 2.0 Flash (Default)"}
 
     # Get current selection
     current_model = get_selected_model()
 
-    # If current model not in options, use default
+    # Safe fallback if current model not in options
     if current_model not in model_options:
         current_model = DEFAULT_MODEL
         if current_model not in model_options:
-            current_model = list(model_options.keys())[0]
+            # Use first available model safely
+            available_models = list(model_options.keys())
+            if available_models:
+                current_model = available_models[0]
+            else:
+                st.error("No AI models available")
+                return False
 
     # Model dropdown
     model_ids = list(model_options.keys())
@@ -174,10 +319,18 @@ def render_model_selector() -> bool:
         key="model_selector"
     )
 
+    # Refresh button
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        if st.button("🔄", help="Refresh model list", key="refresh_models"):
+            clear_model_cache()
+            st.rerun()
+
     # Check if model changed
     model_changed = selected_model != get_selected_model()
     if model_changed:
         set_selected_model(selected_model)
+        logger.info(f"Model changed to: {selected_model}")
 
     return model_changed
 
@@ -186,13 +339,20 @@ def render_llm_status() -> None:
     """Render LLM configuration status indicator."""
     status = get_llm_config_status()
 
+    st.divider()
+
     if status["configured"]:
         # Show compact status
         model_name = status['model_display']
         # Truncate long model names
         if len(model_name) > 30:
             model_name = model_name[:27] + "..."
-        st.success(f"AI Ready", icon="✅")
+        st.success("AI Ready", icon="✅")
+
+        # Show warnings if any
+        for warning in status.get("warnings", []):
+            st.warning(warning, icon="⚠️")
+
     else:
         st.error("AI not configured", icon="⚠️")
         with st.expander("Setup required"):
