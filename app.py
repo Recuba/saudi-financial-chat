@@ -104,6 +104,7 @@ else:
 
         # Process query and add to history
         if prompt:
+            st.session_state.last_query = prompt  # Store for chart visualization
             add_to_chat_history("user", prompt)
             with st.chat_message("ai"):
                 with st.spinner("Analyzing data..."):

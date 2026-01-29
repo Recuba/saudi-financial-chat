@@ -208,6 +208,14 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
         if response_type == "dataframe":
             st.dataframe(data, use_container_width=True, hide_index=True)
 
+            # Auto-visualize if query suggests chart
+            from components.visualizations.response_charts import should_render_chart, auto_visualize
+            last_query = st.session_state.get("last_query", "")
+            if should_render_chart(last_query) and len(data) <= 50:
+                fig = auto_visualize(data, last_query)
+                if fig:
+                    st.plotly_chart(fig, use_container_width=True)
+
         elif response_type == "chart":
             try:
                 if Image is not None and data:
