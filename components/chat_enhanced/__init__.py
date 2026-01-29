@@ -12,7 +12,7 @@ Components:
     - FeedbackWidget: Star rating feedback collection
 """
 
-from components.chat.messages import (
+from components.chat_enhanced.messages import (
     ChatMessage,
     render_message,
     render_chat_history,
@@ -21,14 +21,14 @@ from components.chat.messages import (
     get_chat_history,
 )
 
-from components.chat.code_display import (
+from components.chat_enhanced.code_display import (
     CodeDisplay,
     render_code,
     detect_language,
     copy_code_button,
 )
 
-from components.chat.feedback import (
+from components.chat_enhanced.feedback import (
     FeedbackRecord,
     FeedbackWidget,
     render_star_rating,

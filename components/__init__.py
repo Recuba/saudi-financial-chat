@@ -75,16 +75,16 @@ from .navigation import (
 )
 
 # ============================================================================
-# Chat Components
+# Chat Components (Enhanced)
 # ============================================================================
-from .chat import (
+from .chat_enhanced import (
     # Messages
     ChatMessage,
     render_message,
-    render_chat_history,
+    render_chat_history as render_enhanced_chat_history,
     add_message_to_history,
-    clear_chat_history,
-    get_chat_history,
+    clear_chat_history as clear_enhanced_chat_history,
+    get_chat_history as get_enhanced_chat_history,
     # Code Display
     CodeDisplay,
     render_code,
@@ -96,6 +96,24 @@ from .chat import (
     render_star_rating,
     get_feedback_history,
     save_feedback,
+)
+
+# ============================================================================
+# Chat Components (Core - used by app.py)
+# ============================================================================
+from .chat import (
+    format_response,
+    render_chat_input,
+    render_user_message,
+    render_ai_response,
+    process_query,
+    render_chat_with_response,
+    initialize_chat_history,
+    add_to_chat_history,
+    get_chat_history,
+    clear_chat_history,
+    render_chat_history,
+    render_clear_history_button,
 )
 
 # ============================================================================
