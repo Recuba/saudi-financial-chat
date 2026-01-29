@@ -30,6 +30,14 @@ from .date_picker import (
     render_quick_date_presets,
 )
 
+from .advanced_filters import (
+    get_available_sectors,
+    get_year_range,
+    get_available_companies,
+    apply_filters as apply_advanced_filters,
+    render_advanced_filters,
+)
+
 __all__ = [
     # Dynamic Filters
     "DynamicFilterManager",
@@ -51,4 +59,10 @@ __all__ = [
     "render_date_range_picker",
     "render_fiscal_year_selector",
     "render_quick_date_presets",
+    # Advanced Filters
+    "get_available_sectors",
+    "get_year_range",
+    "get_available_companies",
+    "apply_advanced_filters",
+    "render_advanced_filters",
 ]

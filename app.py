@@ -76,6 +76,15 @@ else:
         data = load_data()
         selected_df = data[dataset_choice]
 
+        # Advanced filters
+        from components.filters.advanced_filters import render_advanced_filters, apply_filters
+        with st.sidebar:
+            filters = render_advanced_filters(selected_df)
+
+        if filters:
+            selected_df = apply_filters(selected_df, filters)
+            st.sidebar.caption(f"Filtered: {len(selected_df):,} rows")
+
         # Data preview (expanded by default with 5 rows)
         from components.data_preview import render_data_preview
         render_data_preview(selected_df, expanded=True, max_rows=5)
