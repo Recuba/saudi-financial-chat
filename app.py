@@ -334,7 +334,11 @@ with st.expander("📄 Data Preview", expanded=False):
         "facts": facts,
         "ratios": ratios
     }
-    st.dataframe(dataset_map[dataset_choice].head(10), use_container_width=True)
+    st.dataframe(
+        dataset_map[dataset_choice].head(10),
+        use_container_width=True,
+        height=400  # Explicit height to show all 10 rows
+    )
 
 # --- EXAMPLE QUESTIONS ---
 st.subheader("💡 Example Questions")
