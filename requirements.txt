@@ -5,6 +5,7 @@ pandasai_litellm
 Pillow
 streamlit
 pyarrow
+requests
 
 # Testing
 pytest>=7.0.0

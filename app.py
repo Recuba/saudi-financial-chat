@@ -53,7 +53,11 @@ with col2:
         )
 
 # --- SIDEBAR ---
-dataset_choice = render_sidebar()
+dataset_choice, model_changed = render_sidebar()
+
+# --- RE-INITIALIZE LLM IF MODEL CHANGED ---
+if model_changed:
+    llm, llm_error = initialize_llm()
 
 # --- MAIN CONTENT ---
 st.divider()
