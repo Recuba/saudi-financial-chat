@@ -383,6 +383,38 @@ hr {{
     animation: pulse-gold 2s infinite;
 }}
 
+/* Loading Dot Animation */
+@keyframes bounce {{
+    0%, 80%, 100% {{
+        transform: translateY(0);
+    }}
+    40% {{
+        transform: translateY(-8px);
+    }}
+}}
+
+.loading-dot {{
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin: 0 4px;
+    background: var(--gold-primary);
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+}}
+
+.loading-dot:nth-child(1) {{
+    animation-delay: -0.32s;
+}}
+
+.loading-dot:nth-child(2) {{
+    animation-delay: -0.16s;
+}}
+
+.loading-dot:nth-child(3) {{
+    animation-delay: 0s;
+}}
+
 /* Tooltip Styles */
 .tooltip {{
     position: relative;
@@ -447,8 +479,8 @@ hr {{
 .chart-container {{
     background: var(--bg-card);
     border-radius: var(--radius-md);
-    padding: var(--space-lg);
-    margin: var(--space-md) 0;
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md) 0;
 }}
 
 /* Plotly/Matplotlib overrides for dark theme */
@@ -464,7 +496,7 @@ hr {{
 [data-testid="stImage"] {{
     background: var(--bg-card);
     border-radius: var(--radius-md);
-    padding: var(--space-md);
+    padding: var(--spacing-md);
     border: 1px solid rgba(212, 168, 75, 0.1);
 }}
 
