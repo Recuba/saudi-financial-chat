@@ -6,6 +6,7 @@ from utils.data_processing import (
     format_sar_abbreviated,
     format_percentage,
     format_ratio,
+    format_currency_value,
     get_column_type,
     create_styled_dataframe
 )
@@ -117,3 +118,18 @@ def test_create_styled_dataframe():
     })
     styled = create_styled_dataframe(df)
     assert isinstance(styled, pd.io.formats.style.Styler)
+
+
+def test_format_currency_value_sar():
+    """SAR currency formatting."""
+    assert format_currency_value(1_000_000, 'SAR') == 'SAR 1.0M'
+
+
+def test_format_currency_value_usd():
+    """USD currency formatting."""
+    assert format_currency_value(1_000_000, 'USD') == 'USD 1.0M'
+
+
+def test_format_currency_value_null():
+    """Null handling."""
+    assert format_currency_value(None, 'SAR') == '-'

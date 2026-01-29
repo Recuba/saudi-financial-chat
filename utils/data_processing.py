@@ -145,10 +145,39 @@ def format_ratio(value: float) -> str:
     return f'{value:.2f}x'
 
 
+def format_currency_value(value: float, currency: str = 'SAR') -> str:
+    """
+    Format a currency value with K/M/B abbreviations.
+
+    Args:
+        value: Numeric value
+        currency: Currency code (SAR, USD)
+
+    Returns:
+        Formatted string like 'SAR 1.5B' or 'USD 1.5B'
+    """
+    if pd.isna(value):
+        return '-'
+
+    abs_val = abs(value)
+
+    if abs_val >= 1e12:
+        return f'{currency} {value / 1e12:.1f}T'
+    elif abs_val >= 1e9:
+        return f'{currency} {value / 1e9:.1f}B'
+    elif abs_val >= 1e6:
+        return f'{currency} {value / 1e6:.1f}M'
+    elif abs_val >= 1e3:
+        return f'{currency} {value / 1e3:.1f}K'
+    else:
+        return f'{currency} {value:,.0f}'
+
+
 def format_dataframe_for_display(
     df: pd.DataFrame,
     normalize: bool = True,
-    format_values: bool = True
+    format_values: bool = True,
+    currency_column: str = 'currency'
 ) -> pd.DataFrame:
     """
     Prepare a DataFrame for display with normalization and formatting.
@@ -157,6 +186,7 @@ def format_dataframe_for_display(
         df: Raw DataFrame from parquet
         normalize: Apply scale factor normalization
         format_values: Apply value formatting
+        currency_column: Column containing currency code
 
     Returns:
         Display-ready DataFrame
@@ -173,7 +203,20 @@ def format_dataframe_for_display(
             col_type = get_column_type(col)
 
             if col_type == 'currency':
-                result[col] = result[col].apply(format_sar_abbreviated)
+                if currency_column in result.columns:
+                    # Format with per-row currency
+                    result[col] = result.apply(
+                        lambda row, c=col: format_currency_value(
+                            row[c],
+                            'SAR' if 'Riyal' in str(row.get(currency_column, '')) else
+                            'USD' if 'Dollar' in str(row.get(currency_column, '')) else 'SAR'
+                        ),
+                        axis=1
+                    )
+                else:
+                    result[col] = result[col].apply(
+                        lambda x: format_currency_value(x, 'SAR')
+                    )
             elif col_type == 'percentage':
                 result[col] = result[col].apply(format_percentage)
             elif col_type == 'ratio':
