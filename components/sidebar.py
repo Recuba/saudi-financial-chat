@@ -1,17 +1,24 @@
 """Sidebar component for Ra'd AI.
 
-Provides database info, dataset selection, and column reference.
+Provides database info, dataset selection, model selection, and column reference.
 """
 
 import streamlit as st
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from utils.data_loader import (
     load_data,
     get_dataset_info,
     get_column_info,
     DATASET_DISPLAY_NAMES
 )
-from utils.llm_config import get_llm_config_status
+from utils.llm_config import (
+    get_llm_config_status,
+    get_api_key,
+    get_model_options,
+    get_selected_model,
+    set_selected_model,
+    DEFAULT_MODEL,
+)
 
 
 def render_database_info() -> None:
@@ -121,14 +128,71 @@ def render_column_reference(dataset_name: str) -> None:
             st.code("\n".join(sorted(df['ratio'].unique().tolist())))
 
 
+def render_model_selector() -> bool:
+    """Render the AI model selection dropdown.
+
+    Returns:
+        True if model was changed, False otherwise
+    """
+    st.header("AI Model")
+
+    api_key = get_api_key()
+    if not api_key:
+        st.warning("Configure API key first")
+        return False
+
+    # Get available models
+    model_options = get_model_options(api_key)
+
+    if not model_options:
+        st.error("Could not fetch models")
+        return False
+
+    # Get current selection
+    current_model = get_selected_model()
+
+    # If current model not in options, use default
+    if current_model not in model_options:
+        current_model = DEFAULT_MODEL
+        if current_model not in model_options:
+            current_model = list(model_options.keys())[0]
+
+    # Model dropdown
+    model_ids = list(model_options.keys())
+
+    try:
+        current_index = model_ids.index(current_model)
+    except ValueError:
+        current_index = 0
+
+    selected_model = st.selectbox(
+        "Choose AI model:",
+        options=model_ids,
+        index=current_index,
+        format_func=lambda x: model_options.get(x, x),
+        help="Select the AI model for answering queries. Pricing shown as $/1M tokens (input/output).",
+        key="model_selector"
+    )
+
+    # Check if model changed
+    model_changed = selected_model != get_selected_model()
+    if model_changed:
+        set_selected_model(selected_model)
+
+    return model_changed
+
+
 def render_llm_status() -> None:
     """Render LLM configuration status indicator."""
     status = get_llm_config_status()
 
-    st.divider()
-
     if status["configured"]:
-        st.success(f"AI: {status['model_display']}", icon="✅")
+        # Show compact status
+        model_name = status['model_display']
+        # Truncate long model names
+        if len(model_name) > 30:
+            model_name = model_name[:27] + "..."
+        st.success(f"AI Ready", icon="✅")
     else:
         st.error("AI not configured", icon="⚠️")
         with st.expander("Setup required"):
@@ -136,11 +200,11 @@ def render_llm_status() -> None:
             st.code('OPENROUTER_API_KEY = "sk-or-..."', language="toml")
 
 
-def render_sidebar() -> str:
+def render_sidebar() -> Tuple[str, bool]:
     """Render the complete sidebar.
 
     Returns:
-        Selected dataset name
+        Tuple of (selected dataset name, model_changed boolean)
     """
     with st.sidebar:
         render_database_info()
@@ -149,8 +213,12 @@ def render_sidebar() -> str:
         dataset_choice = render_dataset_selector()
         st.divider()
 
+        # Model selector (before column reference)
+        model_changed = render_model_selector()
+        st.divider()
+
         render_column_reference(dataset_choice)
 
         render_llm_status()
 
-        return dataset_choice
+        return dataset_choice, model_changed
