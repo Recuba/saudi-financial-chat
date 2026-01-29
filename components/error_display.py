@@ -66,6 +66,18 @@ ERROR_PATTERNS: Dict[str, Dict[str, Any]] = {
         ],
         "action_label": "Retry",
     },
+    "response_format": {
+        "patterns": ["result must be in the format", "dictionary of type and value", "result ="],
+        "title": "Query Processing Error",
+        "description": "The AI had trouble formatting the response for your question.",
+        "steps": [
+            "Try rephrasing your question with more specific terms",
+            "Ask for a specific metric or comparison (e.g., 'What is the total revenue for SABIC in 2023?')",
+            "Try asking for data in a different format (e.g., 'Show me a table of...' instead of 'List...')",
+            "Break complex questions into simpler parts",
+        ],
+        "action_label": "Try Again",
+    },
 }
 
 # Generic error fallback
@@ -154,6 +166,7 @@ def render_error_banner(
         "timeout": ":electric_plug:",
         "data": ":card_file_box:",
         "model": ":robot_face:",
+        "response_format": ":speech_balloon:",
         "generic": ":warning:",
     }
     icon = icon_map.get(error_info["type"], ":warning:")
