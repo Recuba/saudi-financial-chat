@@ -6,7 +6,8 @@ from utils.data_processing import (
     format_sar_abbreviated,
     format_percentage,
     format_ratio,
-    get_column_type
+    get_column_type,
+    create_styled_dataframe
 )
 
 def test_normalize_scale_1():
@@ -105,3 +106,14 @@ class TestGetColumnType:
 
     def test_unknown_column(self):
         assert get_column_type('company_name') == 'text'
+
+
+def test_create_styled_dataframe():
+    """Styled dataframe should return Styler object."""
+    df = pd.DataFrame({
+        'revenue': [1_000_000_000],
+        'roe': [0.25],
+        'current_ratio': [1.5]
+    })
+    styled = create_styled_dataframe(df)
+    assert isinstance(styled, pd.io.formats.style.Styler)

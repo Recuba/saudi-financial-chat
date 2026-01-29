@@ -180,3 +180,30 @@ def format_dataframe_for_display(
                 result[col] = result[col].apply(format_ratio)
 
     return result
+
+
+def create_styled_dataframe(df: pd.DataFrame) -> pd.io.formats.style.Styler:
+    """
+    Create a styled DataFrame with proper number formatting.
+
+    Args:
+        df: DataFrame to style
+
+    Returns:
+        Styled DataFrame ready for st.dataframe()
+    """
+    # Build format dict based on column types
+    format_dict = {}
+
+    for col in df.columns:
+        col_type = get_column_type(col)
+
+        if col_type == 'currency':
+            format_dict[col] = lambda x, c=col: format_sar_abbreviated(x) if pd.notna(x) else '-'
+        elif col_type == 'percentage':
+            format_dict[col] = lambda x, c=col: format_percentage(x) if pd.notna(x) else '-'
+        elif col_type == 'ratio':
+            format_dict[col] = lambda x, c=col: format_ratio(x) if pd.notna(x) else '-'
+
+    # Apply formatting
+    return df.style.format(format_dict, na_rep='-')
