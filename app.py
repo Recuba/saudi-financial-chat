@@ -12,6 +12,7 @@ import io
 from PIL import Image
 import os
 from pathlib import Path
+from utils.data_processing import normalize_to_sar
 
 # --- LLM CONFIGURATION ---
 llm = LiteLLM(
@@ -271,11 +272,18 @@ hr {
 # --- LOAD DATA ---
 @st.cache_data
 def load_data():
+    """Load and normalize financial data from parquet files."""
     base_path = Path(__file__).parent / "data"
+
     filings = pd.read_parquet(base_path / "filings.parquet")
     facts = pd.read_parquet(base_path / "facts_numeric.parquet")
     ratios = pd.read_parquet(base_path / "ratios.parquet")
     analytics = pd.read_parquet(base_path / "analytics_view.parquet")
+
+    # Normalize scale factors if not already normalized
+    if 'scale_factor' in analytics.columns and (analytics['scale_factor'] != 1).any():
+        analytics = normalize_to_sar(analytics)
+
     return filings, facts, ratios, analytics
 
 # --- TITLE ---
