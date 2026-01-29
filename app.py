@@ -29,6 +29,7 @@ from components.chat import (
     render_ai_response,
 )
 from components.error_display import render_api_key_setup_guide
+from components.session_manager import initialize_session, add_recent_query
 from utils.data_loader import load_data
 from utils.llm_config import initialize_llm, check_llm_ready
 
@@ -38,6 +39,9 @@ LOGO_PATH = Path(__file__).parent / "assets" / "logo.png"
 # --- APPLY STYLES ---
 st.markdown(get_base_css(), unsafe_allow_html=True)
 st.markdown(get_error_css(), unsafe_allow_html=True)
+
+# --- INITIALIZE SESSION STATE ---
+initialize_session()
 
 # --- INITIALIZE LLM ---
 llm, llm_error = initialize_llm()
@@ -123,6 +127,7 @@ else:
         # Process query and add to history
         if prompt:
             st.session_state.last_query = prompt  # Store for chart visualization
+            add_recent_query(prompt, dataset_choice)  # Track in recent queries
             add_to_chat_history("user", prompt)
             with st.chat_message("ai"):
                 with st.spinner("Analyzing data..."):

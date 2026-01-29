@@ -64,6 +64,26 @@ from .status_indicator import (
     check_optional_dependencies,
 )
 
+from .session_manager import (
+    SESSION_DEFAULTS,
+    initialize_session,
+    get_session_defaults,
+    get_session_value,
+    set_session_value,
+    add_favorite_query,
+    remove_favorite_query,
+    get_favorite_queries,
+    add_recent_query,
+    get_recent_queries,
+    clear_recent_queries,
+    render_favorites_section,
+    render_recent_queries_section,
+    save_filter_state,
+    get_filter_state,
+    set_selected_dataset,
+    get_selected_dataset,
+)
+
 
 # ============================================================================
 # Enhanced Components (lazy loading - only import when accessed)
@@ -158,4 +178,22 @@ __all__ = [
     "render_status_badge",
     "render_dependency_status",
     "check_optional_dependencies",
+    # Core - Session management
+    "SESSION_DEFAULTS",
+    "initialize_session",
+    "get_session_defaults",
+    "get_session_value",
+    "set_session_value",
+    "add_favorite_query",
+    "remove_favorite_query",
+    "get_favorite_queries",
+    "add_recent_query",
+    "get_recent_queries",
+    "clear_recent_queries",
+    "render_favorites_section",
+    "render_recent_queries_section",
+    "save_filter_state",
+    "get_filter_state",
+    "set_selected_dataset",
+    "get_selected_dataset",
 ]
