@@ -1,11 +1,12 @@
 # Core
-numpy
-pandas
-pandasai>=3.0.0
-pandasai_litellm
-Pillow
+numpy>=1.26.0,<2.0.0
+pandas>=2.0.0,<3.0.0
+pandasai>=3.0.0,<4.0.0
+pandasai-litellm>=0.0.1
+Pillow>=10.0.0
 streamlit>=1.30.0
-pyarrow
+pyarrow>=15.0.0
+requests
 
 # HIGH PRIORITY - Essential Components
 streamlit-aggrid>=0.3.4
@@ -38,3 +39,7 @@ streamlit-authenticator>=0.3.0
 
 # Visualization
 plotly>=5.0.0
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
