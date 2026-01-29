@@ -89,69 +89,77 @@ else:
             selected_df = apply_filters(selected_df, filters)
             st.sidebar.caption(f"Filtered: {len(selected_df):,} rows")
 
-        # Data preview (expanded by default with 5 rows)
-        from components.data_preview import render_data_preview
-        render_data_preview(selected_df, expanded=True, max_rows=5)
+        # Create tabs for Chat and Compare modes
+        tab_chat, tab_compare = st.tabs(["Chat", "Compare"])
 
-        # Example questions
-        example_query = render_example_questions(max_visible=3)
-        if example_query:
-            st.session_state.query = example_query
+        with tab_chat:
+            # Data preview (expanded by default with 5 rows)
+            from components.data_preview import render_data_preview
+            render_data_preview(selected_df, expanded=True, max_rows=5)
 
-        # Render chat history first
-        render_chat_history()
+            # Example questions
+            example_query = render_example_questions(max_visible=3)
+            if example_query:
+                st.session_state.query = example_query
 
-        # Clear history button
-        if get_chat_history():
-            render_clear_history_button()
+            # Render chat history first
+            render_chat_history()
 
-        st.divider()
+            # Clear history button
+            if get_chat_history():
+                render_clear_history_button()
 
-        # Chat input
-        prompt = render_chat_input()
+            st.divider()
 
-        # Query suggestions
-        from components.query_suggestions import render_suggestions_dropdown
+            # Chat input
+            prompt = render_chat_input()
 
-        # Show suggestions based on recent queries or default
-        suggestion = render_suggestions_dropdown(prompt or "")
-        if suggestion:
-            st.session_state.query = suggestion
-            st.rerun()
+            # Query suggestions
+            from components.query_suggestions import render_suggestions_dropdown
 
-        # Check for button-triggered query
-        if "query" in st.session_state and st.session_state.query:
-            prompt = st.session_state.query
-            st.session_state.query = None
+            # Show suggestions based on recent queries or default
+            suggestion = render_suggestions_dropdown(prompt or "")
+            if suggestion:
+                st.session_state.query = suggestion
+                st.rerun()
 
-        # Process query and add to history
-        if prompt:
-            st.session_state.last_query = prompt  # Store for chart visualization
-            add_recent_query(prompt, dataset_choice)  # Track in recent queries
-            add_to_chat_history("user", prompt)
-            with st.chat_message("ai"):
-                with st.spinner("Analyzing data..."):
-                    response = process_query(prompt, selected_df)
+            # Check for button-triggered query
+            if "query" in st.session_state and st.session_state.query:
+                prompt = st.session_state.query
+                st.session_state.query = None
 
-                if response is None:
-                    response = {
-                        "type": "error",
-                        "data": None,
-                        "code": None,
-                        "message": "No response received"
-                    }
+            # Process query and add to history
+            if prompt:
+                st.session_state.last_query = prompt  # Store for chart visualization
+                add_recent_query(prompt, dataset_choice)  # Track in recent queries
+                add_to_chat_history("user", prompt)
+                with st.chat_message("ai"):
+                    with st.spinner("Analyzing data..."):
+                        response = process_query(prompt, selected_df)
 
-                add_to_chat_history("assistant", "", response)  # content is in response_data
+                    if response is None:
+                        response = {
+                            "type": "error",
+                            "data": None,
+                            "code": None,
+                            "message": "No response received"
+                        }
 
-                if response["type"] == "error":
-                    from components.error_display import format_api_error, render_error_banner
-                    error_info = format_api_error(response.get("message", "Unknown error"))
-                    render_error_banner(error_info, show_details=True)
-                    if st.button("Retry Query", key="retry_query"):
-                        st.session_state.query = prompt
-                        st.rerun()
-                else:
-                    render_ai_response(response)
+                    add_to_chat_history("assistant", "", response)  # content is in response_data
+
+                    if response["type"] == "error":
+                        from components.error_display import format_api_error, render_error_banner
+                        error_info = format_api_error(response.get("message", "Unknown error"))
+                        render_error_banner(error_info, show_details=True)
+                        if st.button("Retry Query", key="retry_query"):
+                            st.session_state.query = prompt
+                            st.rerun()
+                    else:
+                        render_ai_response(response)
+
+        with tab_compare:
+            from components.comparison_mode import render_comparison_mode
+            render_comparison_mode(selected_df)
 
     except FileNotFoundError as e:
         st.error("Data files not found. Please ensure data files are in the 'data' directory.")
