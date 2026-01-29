@@ -31,6 +31,12 @@ from .chat import (
     render_chat_history,
     render_clear_history_button,
 )
+from .status_indicator import (
+    render_loading_state,
+    render_status_badge,
+    render_dependency_status,
+    check_optional_dependencies,
+)
 
 __all__ = [
     # Error display
@@ -60,4 +66,9 @@ __all__ = [
     "clear_chat_history",
     "render_chat_history",
     "render_clear_history_button",
+    # Status indicator
+    "render_loading_state",
+    "render_status_badge",
+    "render_dependency_status",
+    "check_optional_dependencies",
 ]

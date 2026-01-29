@@ -442,6 +442,38 @@ hr {{
     border-color: var(--gold-primary);
     color: var(--gold-light);
 }}
+
+/* Chart Container - Better margins and labels */
+.chart-container {{
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    margin: var(--space-md) 0;
+}}
+
+/* Plotly/Matplotlib overrides for dark theme */
+.js-plotly-plot .plotly .modebar {{
+    background: var(--bg-card) !important;
+}}
+
+.js-plotly-plot .plotly .modebar-btn path {{
+    fill: var(--gold-light) !important;
+}}
+
+/* Image containers (for PandasAI charts) */
+[data-testid="stImage"] {{
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    border: 1px solid rgba(212, 168, 75, 0.1);
+}}
+
+/* Toast notifications */
+[data-testid="stToast"] {{
+    background: var(--bg-card) !important;
+    border: 1px solid rgba(212, 168, 75, 0.3) !important;
+    border-radius: var(--radius-md) !important;
+}}
 </style>
 """
 
