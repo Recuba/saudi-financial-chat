@@ -1,7 +1,40 @@
+# Core
 numpy
 pandas
 pandasai>=3.0.0
 pandasai_litellm
 Pillow
-streamlit
+streamlit>=1.30.0
 pyarrow
+
+# HIGH PRIORITY - Essential Components
+streamlit-aggrid>=0.3.4
+streamlit-chat>=0.1.1
+streamlit-dynamic-filters>=0.1.6
+pygwalker>=0.4.0
+streamlit-echarts>=0.4.0
+streamlit-plotly-events>=0.0.6
+
+# MEDIUM PRIORITY - Enhanced Analytics & UX
+streamlit-tree-select>=0.0.5
+streamlit-antd-components>=0.2.0
+streamlit-option-menu>=0.3.6
+streamlit-extras>=0.4.0
+itables>=1.7.0
+ydata-profiling>=4.6.0
+
+# SPECIALIZED - Financial & Data Features
+streamlit-calendar>=1.0.0
+streamlit-ext>=0.1.0
+streamlit-monaco>=0.1.0
+plost>=0.2.5
+streamlit-agraph>=0.0.45
+
+# USER EXPERIENCE & STATE
+streamlit-cookies-controller>=0.0.4
+streamlit-star-rating>=0.0.7
+streamlit-theme>=0.0.5
+streamlit-authenticator>=0.3.0
+
+# Visualization
+plotly>=5.0.0
