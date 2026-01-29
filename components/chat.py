@@ -3,6 +3,7 @@
 Provides enhanced chat input, message display, and response handling.
 """
 
+import hashlib
 import io
 import os
 from datetime import datetime
@@ -27,6 +28,22 @@ except ImportError:
 from components.error_display import format_api_error, render_error_banner
 
 logger = logging.getLogger(__name__)
+
+
+def _get_response_key(response_data: Dict[str, Any]) -> str:
+    """Generate a stable key from response data.
+
+    Uses a hash of the content to ensure consistent keys across Streamlit reruns,
+    unlike id() which changes between reruns.
+
+    Args:
+        response_data: Dictionary from format_response()
+
+    Returns:
+        8-character hex string suitable for widget keys
+    """
+    content = str(response_data.get("data", ""))[:100]  # First 100 chars
+    return hashlib.md5(content.encode()).hexdigest()[:8]
 
 
 def format_response(response: Any) -> Dict[str, Any]:
@@ -91,6 +108,33 @@ def format_response(response: Any) -> Dict[str, Any]:
         }
 
 
+def format_response_for_copy(response_data: Dict[str, Any]) -> str:
+    """Format response data for clipboard copy.
+
+    Args:
+        response_data: Dictionary from format_response()
+
+    Returns:
+        String suitable for clipboard
+    """
+    response_type = response_data.get("type", "text")
+    data = response_data.get("data")
+
+    if data is None:
+        return ""
+
+    if response_type == "dataframe":
+        if pd is not None and isinstance(data, pd.DataFrame):
+            return data.to_string(index=False)
+        return str(data)
+
+    elif response_type == "chart":
+        return "[Chart - cannot copy image to clipboard]"
+
+    else:
+        return str(data)
+
+
 def render_chat_input(placeholder: str = "Ask a question about Saudi financial data...") -> Optional[str]:
     """Render the chat input with keyboard hints.
 
@@ -142,6 +186,21 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
     if response_type == "error":
         st.error(response_data.get("message", "An error occurred"))
         return
+
+    # Copy button
+    if response_type != "chart":
+        copy_text = format_response_for_copy(response_data)
+        if copy_text:
+            response_key = _get_response_key(response_data)
+            col1, col2 = st.columns([6, 1])
+            with col2:
+                if st.button("📋", key=f"copy_{response_key}", help="Copy to clipboard"):
+                    st.session_state[f"copied_{response_key}"] = True
+
+            # Show copyable text area when clicked
+            if st.session_state.get(f"copied_{response_key}"):
+                st.code(copy_text, language=None)
+                st.caption("Select text above and press Ctrl+C (Cmd+C on Mac) to copy")
 
     tab_result, tab_code = st.tabs(["Result", "Code"])
 
