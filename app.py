@@ -12,7 +12,7 @@ import io
 from PIL import Image
 import os
 from pathlib import Path
-from utils.data_processing import normalize_to_sar
+from utils.data_processing import normalize_to_sar, format_dataframe_for_display
 
 # --- LLM CONFIGURATION ---
 llm = LiteLLM(
@@ -403,7 +403,13 @@ if prompt:
                 if response.type == 'dataframe':
                     tabResult, tabCode = st.tabs(["Result", "Code"])
                     with tabResult:
-                        st.dataframe(response.value, use_container_width=True, hide_index=True)
+                        # Format the dataframe for display
+                        display_df = format_dataframe_for_display(
+                            response.value,
+                            normalize=False,  # Already normalized at load
+                            format_values=True
+                        )
+                        st.dataframe(display_df, use_container_width=True, hide_index=True)
                     with tabCode:
                         st.code(response.last_code_executed, language='python')
 
