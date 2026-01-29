@@ -152,11 +152,16 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
         elif response_type == "chart":
             try:
                 if Image is not None and data:
-                    with open(data, "rb") as f:
-                        img_bytes = f.read()
-                    img = Image.open(io.BytesIO(img_bytes))
+                    # Chart data can be file path or bytes
+                    if isinstance(data, bytes):
+                        img = Image.open(io.BytesIO(data))
+                    else:
+                        with open(data, "rb") as f:
+                            img_bytes = f.read()
+                        img = Image.open(io.BytesIO(img_bytes))
+                        # Clean up temp file
+                        os.remove(data)
                     st.image(img, use_container_width=True)
-                    os.remove(data)
                 else:
                     st.error("Unable to display chart: PIL not available")
             except Exception as e:
@@ -191,7 +196,19 @@ def process_query(
         import pandasai as pai
         df = pai.DataFrame(dataset)
         response = df.chat(query)
-        return format_response(response)
+        response_data = format_response(response)
+
+        # If chart, convert file path to bytes for history storage
+        if response_data["type"] == "chart" and response_data["data"]:
+            try:
+                with open(response_data["data"], "rb") as f:
+                    chart_bytes = f.read()
+                os.remove(response_data["data"])  # Clean up temp file
+                response_data["data"] = chart_bytes
+            except Exception:
+                pass  # Keep file path if conversion fails
+
+        return response_data
 
     except Exception as e:
         error_msg = str(e)
@@ -346,7 +363,7 @@ def render_clear_history_button() -> bool:
             subcol1, subcol2 = st.columns(2)
             with subcol1:
                 if st.button("Yes", key="confirm_yes", type="primary"):
-                    st.session_state.chat_history = []
+                    clear_chat_history()  # Use the function instead of direct assignment
                     st.session_state.confirm_clear = False
                     return True
             with subcol2:
