@@ -12,6 +12,11 @@ from .sidebar import (
     render_column_reference,
     render_llm_status,
 )
+from .example_questions import (
+    render_example_questions,
+    render_example_questions_minimal,
+    EXAMPLE_QUESTIONS,
+)
 
 __all__ = [
     "format_api_error",
@@ -22,4 +27,7 @@ __all__ = [
     "render_dataset_selector",
     "render_column_reference",
     "render_llm_status",
+    "render_example_questions",
+    "render_example_questions_minimal",
+    "EXAMPLE_QUESTIONS",
 ]
