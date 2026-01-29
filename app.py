@@ -344,10 +344,18 @@ with st.expander("📄 Data Preview", expanded=False):
         "facts": facts,
         "ratios": ratios
     }
-    st.dataframe(
+
+    # Format for display
+    preview_df = format_dataframe_for_display(
         dataset_map[dataset_choice].head(10),
+        normalize=False,  # Data loaded as-is
+        format_values=True
+    )
+
+    st.dataframe(
+        preview_df,
         use_container_width=True,
-        height=400  # Explicit height to show all 10 rows
+        height=400
     )
 
 # --- EXAMPLE QUESTIONS ---
