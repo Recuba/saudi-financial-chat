@@ -4,7 +4,7 @@ Provides clickable example queries to help users get started.
 """
 
 import streamlit as st
-from typing import List, Dict, Optional
+from typing import Optional
 
 
 # Example questions organized by category
@@ -58,14 +58,10 @@ EXAMPLE_QUESTIONS = {
 }
 
 
-def render_example_questions(
-    expanded: bool = True,
-    max_visible: int = 3
-) -> Optional[str]:
+def render_example_questions(max_visible: int = 3) -> Optional[str]:
     """Render example question buttons.
 
     Args:
-        expanded: Whether to show the expander as expanded
         max_visible: Number of questions to show by default
 
     Returns:
@@ -95,13 +91,16 @@ def render_example_questions(
         for category, questions in EXAMPLE_QUESTIONS.items():
             if category == "Popular":
                 # Skip first 3 already shown
-                questions = questions[max_visible:]
-                if not questions:
+                remaining = questions[max_visible:]
+                if not remaining:
                     continue
+                questions_to_show = remaining
+            else:
+                questions_to_show = questions
 
             st.markdown(f"**{category}**")
 
-            for j, example in enumerate(questions):
+            for j, example in enumerate(questions_to_show):
                 col1, col2 = st.columns([4, 1])
                 with col1:
                     st.markdown(f"{example['icon']} {example['label']}")
@@ -126,16 +125,12 @@ def render_example_questions_minimal() -> Optional[str]:
     """
     st.markdown("**Quick Examples:**")
 
-    examples = [
-        ("Top 10 revenue", "What are the top 10 companies by revenue in 2024?"),
-        ("ROE by sector", "Show average ROE by sector in 2023"),
-        ("High debt", "Which companies have debt to equity ratio greater than 2?"),
-    ]
+    popular = EXAMPLE_QUESTIONS["Popular"][:3]
 
-    cols = st.columns(len(examples))
-    for i, (label, query) in enumerate(examples):
+    cols = st.columns(len(popular))
+    for i, example in enumerate(popular):
         with cols[i]:
-            if st.button(label, key=f"quick_{i}", use_container_width=True):
-                return query
+            if st.button(example["label"], key=f"quick_{i}", use_container_width=True):
+                return example["query"]
 
     return None
