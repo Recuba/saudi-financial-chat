@@ -252,6 +252,14 @@ def render_error_banner(
             if on_retry and st.button(error_info["action_label"], type="primary"):
                 on_retry()
 
+        # Show suggested queries
+        if error_info.get("suggested_queries"):
+            st.markdown("**Try these queries instead:**")
+            for suggestion in error_info["suggested_queries"][:3]:
+                if st.button(f"📝 {suggestion[:40]}...", key=f"suggest_{hash(suggestion)}"):
+                    st.session_state.query = suggestion
+                    st.rerun()
+
         # Collapsible technical details
         with st.expander("Technical Details", expanded=show_details):
             st.code(error_info["original_message"], language=None)
