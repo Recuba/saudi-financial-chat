@@ -280,9 +280,11 @@ def load_data():
     ratios = pd.read_parquet(base_path / "ratios.parquet")
     analytics = pd.read_parquet(base_path / "analytics_view.parquet")
 
-    # Normalize scale factors if not already normalized
-    if 'scale_factor' in analytics.columns and (analytics['scale_factor'] != 1).any():
-        analytics = normalize_to_sar(analytics)
+    # Note: Scale factor normalization disabled - original data has inconsistent
+    # scale relationships that require investigation of source XBRL data.
+    # The formatting functions will still improve display readability.
+    # if 'scale_factor' in analytics.columns and (analytics['scale_factor'] != 1).any():
+    #     analytics = normalize_to_sar(analytics)
 
     return filings, facts, ratios, analytics
 
