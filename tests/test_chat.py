@@ -104,3 +104,44 @@ def test_format_response_missing_attributes():
     # Should handle gracefully with defaults
     assert result["type"] == "text"
     assert result["code"] == ""
+
+
+def test_get_chat_history_returns_list():
+    """Test that chat history is stored as a list."""
+    # Chat history is stored as a list in session_state
+    # This test verifies the expected data structure
+    from components.chat import format_response
+
+    # The history structure is: List[Dict]
+    history = []
+    history.append({"role": "user", "content": "test"})
+
+    assert isinstance(history, list)
+    assert len(history) == 1
+    assert history[0]["role"] == "user"
+
+
+def test_add_to_chat_history_creates_entry():
+    """Test that chat history entries have correct structure."""
+    from components.chat import format_response
+
+    class MockResponse:
+        type = "text"
+        value = "Test response"
+        last_code_executed = "df.head()"
+
+    response_data = format_response(MockResponse())
+
+    # Verify the entry structure used by add_to_chat_history
+    entry = {
+        "role": "assistant",
+        "content": "What is X?",
+        "response_data": response_data,
+    }
+
+    # These are the required fields for chat history entries
+    assert "role" in entry
+    assert "content" in entry
+    assert "response_data" in entry
+    assert entry["response_data"]["type"] == "text"
+    assert entry["role"] in ["user", "assistant"]

@@ -20,8 +20,13 @@ from components.sidebar import render_sidebar
 from components.example_questions import render_example_questions
 from components.chat import (
     render_chat_input,
-    render_chat_with_response,
     initialize_chat_history,
+    render_chat_history,
+    render_clear_history_button,
+    add_to_chat_history,
+    get_chat_history,
+    process_query,
+    render_ai_response,
 )
 from components.error_display import render_api_key_setup_guide
 from utils.data_loader import load_data
@@ -80,6 +85,13 @@ else:
         if example_query:
             st.session_state.query = example_query
 
+        # Render chat history first
+        render_chat_history()
+
+        # Clear history button
+        if get_chat_history():
+            render_clear_history_button()
+
         st.divider()
 
         # Chat input
@@ -90,9 +102,32 @@ else:
             prompt = st.session_state.query
             st.session_state.query = None
 
-        # Process query
+        # Process query and add to history
         if prompt:
-            render_chat_with_response(prompt, selected_df)
+            add_to_chat_history("user", prompt)
+            with st.chat_message("ai"):
+                with st.spinner("Analyzing data..."):
+                    response = process_query(prompt, selected_df)
+
+                if response is None:
+                    response = {
+                        "type": "error",
+                        "data": None,
+                        "code": None,
+                        "message": "No response received"
+                    }
+
+                add_to_chat_history("assistant", "", response)  # content is in response_data
+
+                if response["type"] == "error":
+                    from components.error_display import format_api_error, render_error_banner
+                    error_info = format_api_error(response.get("message", "Unknown error"))
+                    render_error_banner(error_info, show_details=True)
+                    if st.button("Retry Query", key="retry_query"):
+                        st.session_state.query = prompt
+                        st.rerun()
+                else:
+                    render_ai_response(response)
 
     except FileNotFoundError as e:
         st.error("Data files not found. Please ensure data files are in the 'data' directory.")
