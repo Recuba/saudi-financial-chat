@@ -58,6 +58,26 @@ EXAMPLE_QUESTIONS = {
 }
 
 
+def get_examples_by_category(category: str) -> list:
+    """Get examples for a specific category.
+
+    Args:
+        category: Category name (Popular, Analysis, Exploration)
+
+    Returns:
+        List of example dictionaries
+    """
+    return EXAMPLE_QUESTIONS.get(category, [])
+
+
+def get_all_examples() -> list:
+    """Get all examples flattened into a single list."""
+    all_examples = []
+    for questions in EXAMPLE_QUESTIONS.values():
+        all_examples.extend(questions)
+    return all_examples
+
+
 def render_example_questions(max_visible: int = 3) -> Optional[str]:
     """Render example question buttons.
 
@@ -78,13 +98,20 @@ def render_example_questions(max_visible: int = 3) -> Optional[str]:
     cols = st.columns(len(popular))
     for i, example in enumerate(popular):
         with cols[i]:
+            btn_key = f"example_prominent_{i}"
+            is_active = st.session_state.get("active_example") == btn_key
+
+            btn_type = "primary" if is_active else "secondary"
+
             if st.button(
                 f"{example['icon']} {example['label']}",
-                key=f"example_prominent_{i}",
+                key=btn_key,
                 use_container_width=True,
-                help=example["query"]
+                help=example["query"],
+                type=btn_type
             ):
                 selected_query = example["query"]
+                st.session_state.active_example = btn_key
 
     # More examples in expander
     with st.expander("More Examples", expanded=False):
