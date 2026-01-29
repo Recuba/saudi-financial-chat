@@ -249,7 +249,8 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
 def process_query(
     query: str,
     dataset: Any,
-    on_error: Optional[Callable[[str], None]] = None
+    on_error: Optional[Callable[[str], None]] = None,
+    enhance_charts: bool = True
 ) -> Optional[Dict[str, Any]]:
     """Process a user query using PandasAI.
 
@@ -257,6 +258,7 @@ def process_query(
         query: The user's natural language query
         dataset: The DataFrame to query
         on_error: Optional callback for error handling
+        enhance_charts: Whether to enhance chart-related queries with additional instructions
 
     Returns:
         Formatted response dict or None on error
@@ -277,12 +279,23 @@ def process_query(
             "message": "Please enter a query"
         }
 
+    # Optionally enhance chart-related queries
+    processed_query = query
+    if enhance_charts:
+        try:
+            from utils.chart_config import enhance_chart_request
+            processed_query = enhance_chart_request(query)
+            if processed_query != query:
+                logger.debug("Enhanced chart query with additional instructions")
+        except ImportError:
+            pass  # Chart config not available, use original query
+
     logger.info(f"Processing query: {query[:100]}...")
 
     try:
         import pandasai as pai
         df = pai.DataFrame(dataset)
-        response = df.chat(query)
+        response = df.chat(processed_query)
         response_data = format_response(response)
 
         # If chart, convert file path to bytes for history storage

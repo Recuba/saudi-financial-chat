@@ -6,6 +6,8 @@ Pillow
 streamlit
 pyarrow
 requests
+scipy
+matplotlib
 
 # Testing
 pytest>=7.0.0

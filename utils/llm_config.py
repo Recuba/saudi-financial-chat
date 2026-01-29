@@ -357,14 +357,28 @@ def initialize_llm(model_id: Optional[str] = None) -> Tuple[Any, Optional[str]]:
         import pandasai as pai
         from pandasai_litellm.litellm import LiteLLM
 
+        # Import chart configuration for custom prompts
+        from utils.chart_config import get_chart_system_prompt, get_financial_analysis_prompt
+
         llm = LiteLLM(
             model=selected_model,
             api_key=api_key,
         )
 
-        pai.config.set({"llm": llm})
+        # Get custom instructions for better chart output
+        custom_instructions = get_chart_system_prompt() + get_financial_analysis_prompt()
 
-        logger.info(f"LLM initialized successfully with {selected_model}")
+        # Configure PandasAI with LLM and custom settings
+        pai.config.set({
+            "llm": llm,
+            "custom_instructions": custom_instructions,
+            "enable_cache": True,
+            "verbose": False,
+            "save_charts": True,
+            "open_charts": False,
+        })
+
+        logger.info(f"LLM initialized successfully with {selected_model} and custom chart instructions")
         return llm, None
 
     except ImportError as e:

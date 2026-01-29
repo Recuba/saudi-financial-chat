@@ -35,6 +35,7 @@ from components.chat import (
 from components.error_display import render_api_key_setup_guide
 from utils.data_loader import load_data
 from utils.llm_config import initialize_llm, check_llm_ready, clear_model_cache
+from utils.chart_config import apply_matplotlib_config
 
 # --- ASSETS ---
 LOGO_PATH = Path(__file__).parent / "assets" / "logo.png"
@@ -42,6 +43,10 @@ LOGO_PATH = Path(__file__).parent / "assets" / "logo.png"
 # --- APPLY STYLES ---
 st.markdown(get_base_css(), unsafe_allow_html=True)
 st.markdown(get_error_css(), unsafe_allow_html=True)
+
+# --- APPLY MATPLOTLIB CONFIGURATION ---
+# This sets professional chart styling globally
+apply_matplotlib_config()
 
 # --- INITIALIZE LLM ---
 llm, llm_error = initialize_llm()
