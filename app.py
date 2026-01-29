@@ -76,9 +76,9 @@ else:
         data = load_data()
         selected_df = data[dataset_choice]
 
-        # Data preview
-        with st.expander("Data Preview", expanded=False):
-            st.dataframe(selected_df.head(10), use_container_width=True)
+        # Data preview (expanded by default with 5 rows)
+        from components.data_preview import render_data_preview
+        render_data_preview(selected_df, expanded=True, max_rows=5)
 
         # Example questions
         example_query = render_example_questions(max_visible=3)
