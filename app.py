@@ -106,6 +106,15 @@ else:
         # Chat input
         prompt = render_chat_input()
 
+        # Query suggestions
+        from components.query_suggestions import render_suggestions_dropdown
+
+        # Show suggestions based on recent queries or default
+        suggestion = render_suggestions_dropdown(prompt or "")
+        if suggestion:
+            st.session_state.query = suggestion
+            st.rerun()
+
         # Check for button-triggered query
         if "query" in st.session_state and st.session_state.query:
             prompt = st.session_state.query
