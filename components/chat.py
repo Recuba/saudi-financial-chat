@@ -26,6 +26,11 @@ except ImportError:
     Image = None
 
 from components.error_display import format_api_error, render_error_banner
+from components.export import (
+    export_to_csv,
+    export_response_to_text,
+    generate_export_filename,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -187,15 +192,40 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
         st.error(response_data.get("message", "An error occurred"))
         return
 
-    # Copy button
+    # Copy button and export buttons
     if response_type != "chart":
         copy_text = format_response_for_copy(response_data)
         if copy_text:
             response_key = _get_response_key(response_data)
-            col1, col2 = st.columns([6, 1])
+            col1, col2, col3, col4 = st.columns([5, 1, 1, 1])
             with col2:
                 if st.button("📋", key=f"copy_{response_key}", help="Copy to clipboard"):
                     st.session_state[f"copied_{response_key}"] = True
+
+            # Export buttons
+            with col3:
+                text_export = export_response_to_text(response_data)
+                st.download_button(
+                    label="📄",
+                    data=text_export,
+                    file_name=generate_export_filename("response", "txt"),
+                    mime="text/plain",
+                    key=f"export_txt_{response_key}",
+                    help="Export as text"
+                )
+
+            with col4:
+                # CSV export (only for dataframes)
+                if response_type == "dataframe" and pd is not None and isinstance(data, pd.DataFrame):
+                    csv_export = export_to_csv(data)
+                    st.download_button(
+                        label="📊",
+                        data=csv_export,
+                        file_name=generate_export_filename("data", "csv"),
+                        mime="text/csv",
+                        key=f"export_csv_{response_key}",
+                        help="Export as CSV"
+                    )
 
             # Show copyable text area when clicked
             if st.session_state.get(f"copied_{response_key}"):
