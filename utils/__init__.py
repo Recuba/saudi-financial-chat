@@ -1,4 +1,4 @@
-"""Utility functions for Ra'd AI."""
+"""Utility functions for Ra'd AI / Saudi Financial Chat."""
 
 from .data_loader import (
     load_data,
@@ -18,6 +18,13 @@ from .llm_config import (
     MODEL_DISPLAY_NAME,
 )
 
+# Data processing utilities
+try:
+    from .data_processing import normalize_to_sar, format_dataframe_for_display, create_styled_dataframe
+    DATA_PROCESSING_AVAILABLE = True
+except ImportError:
+    DATA_PROCESSING_AVAILABLE = False
+
 __all__ = [
     # Data loader
     "load_data",
@@ -34,3 +41,11 @@ __all__ = [
     "DEFAULT_MODEL",
     "MODEL_DISPLAY_NAME",
 ]
+
+# Add data processing exports if available
+if DATA_PROCESSING_AVAILABLE:
+    __all__.extend([
+        "normalize_to_sar",
+        "format_dataframe_for_display",
+        "create_styled_dataframe",
+    ])

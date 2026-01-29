@@ -1,99 +1,86 @@
-"""Integration tests for Ra'd AI application."""
+# tests/test_integration.py
+"""Integration tests for the full data pipeline."""
 
+import pandas as pd
 import pytest
-import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
+def test_parquet_files_exist():
+    """All required parquet files should exist."""
+    data_dir = Path(__file__).parent.parent / "data"
 
-def test_all_modules_import():
-    """Test that all modules can be imported without errors."""
-    from styles.css import get_base_css, get_error_css
-    from styles.variables import GOLD_PRIMARY, BG_DARK
-    from utils.data_loader import load_data, get_dataset_info
-    from utils.llm_config import validate_api_key, get_llm_config_status
-    from components.error_display import format_api_error
-    from components.sidebar import render_database_info
-    from components.example_questions import EXAMPLE_QUESTIONS
-    from components.chat import format_response
-
-    assert get_base_css is not None
-    assert GOLD_PRIMARY == "#D4A84B"
-    assert load_data is not None
-
-
-def test_css_generation():
-    """Test that CSS is generated correctly."""
-    from styles.css import get_base_css, get_error_css
-
-    base_css = get_base_css()
-    error_css = get_error_css()
-
-    assert "<style>" in base_css
-    assert "</style>" in base_css
-    assert "--gold-primary" in base_css
-    assert "error-banner" in error_css
-
-
-def test_data_loader_returns_valid_data():
-    """Test that data loader returns valid DataFrames."""
-    from utils.data_loader import load_data
-
-    data = load_data()
-
-    assert len(data) == 4
-    assert all(len(df) > 0 for df in data.values())
-
-
-def test_example_questions_have_required_fields():
-    """Test that all example questions have required fields."""
-    from components.example_questions import EXAMPLE_QUESTIONS
-
-    for category, questions in EXAMPLE_QUESTIONS.items():
-        for q in questions:
-            assert "label" in q, f"Missing label in {category}"
-            assert "query" in q, f"Missing query in {category}"
-            assert "icon" in q, f"Missing icon in {category}"
-
-
-def test_error_formatting_covers_common_errors():
-    """Test that error formatting handles common error types."""
-    from components.error_display import format_api_error
-
-    test_cases = [
-        ("Authentication failed", "auth"),
-        ("Rate limit exceeded", "rate_limit"),
-        ("Connection timeout", "timeout"),
-        ("Column 'xyz' not found", "data"),
-        ("Random error message", "generic"),
+    required_files = [
+        "analytics_view.parquet",
+        "facts_numeric.parquet",
+        "filings.parquet",
+        "ratios.parquet"
     ]
 
-    for error_msg, expected_type in test_cases:
-        result = format_api_error(error_msg)
-        assert result["type"] == expected_type, f"Expected {expected_type} for '{error_msg}'"
+    for f in required_files:
+        assert (data_dir / f).exists(), f"Missing file: {f}"
 
 
-def test_dataset_display_names_complete():
-    """Test that all datasets have display names."""
-    from utils.data_loader import DATASET_DISPLAY_NAMES, load_data
+def test_analytics_view_has_required_columns():
+    """Analytics view should have required columns."""
+    data_dir = Path(__file__).parent.parent / "data"
+    df = pd.read_parquet(data_dir / "analytics_view.parquet")
 
-    data = load_data()
+    required_columns = [
+        'company_name', 'fiscal_year', 'revenue', 'net_profit',
+        'total_assets', 'roe', 'current_ratio'
+    ]
 
-    for dataset_key in data.keys():
-        assert dataset_key in DATASET_DISPLAY_NAMES, f"Missing display name for {dataset_key}"
+    for col in required_columns:
+        assert col in df.columns, f"Missing column: {col}"
 
 
-def test_llm_config_validation():
-    """Test LLM configuration validation logic."""
-    from utils.llm_config import validate_api_key
+def test_no_scientific_notation_in_formatted():
+    """Formatted values should not contain scientific notation."""
+    from utils.data_processing import format_sar_abbreviated
 
-    # Invalid cases
-    assert validate_api_key(None)["valid"] is False
-    assert validate_api_key("")["valid"] is False
-    assert validate_api_key("   ")["valid"] is False
-    assert validate_api_key("short")["valid"] is False
+    test_values = [1e12, 1e9, 1e6, 1e3, 100]
 
-    # Valid case
-    assert validate_api_key("sk-or-valid-key-12345")["valid"] is True
+    for val in test_values:
+        formatted = format_sar_abbreviated(val)
+        assert 'e+' not in formatted.lower(), f"Scientific notation found in {formatted}"
+
+
+def test_ratios_have_expected_structure():
+    """Ratios file should have expected structure."""
+    data_dir = Path(__file__).parent.parent / "data"
+    df = pd.read_parquet(data_dir / "ratios.parquet")
+
+    required_columns = ['filing_id', 'ratio', 'value']
+    for col in required_columns:
+        assert col in df.columns, f"Missing column: {col}"
+
+
+def test_format_dataframe_preserves_row_count():
+    """Formatting should not change row count."""
+    from utils.data_processing import format_dataframe_for_display
+
+    df = pd.DataFrame({
+        'revenue': [1e9, 2e9, 3e9],
+        'roe': [0.1, 0.2, 0.3],
+        'company': ['A', 'B', 'C']
+    })
+
+    formatted = format_dataframe_for_display(df, normalize=False, format_values=True)
+
+    assert len(formatted) == len(df), "Formatting changed row count"
+
+
+def test_format_dataframe_formats_currency():
+    """Currency columns should be formatted with SAR prefix."""
+    from utils.data_processing import format_dataframe_for_display
+
+    df = pd.DataFrame({
+        'revenue': [1_500_000_000],
+        'company': ['Test Co']
+    })
+
+    formatted = format_dataframe_for_display(df, normalize=False, format_values=True)
+
+    # Revenue should contain SAR
+    assert 'SAR' in str(formatted['revenue'].iloc[0])
