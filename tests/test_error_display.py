@@ -46,3 +46,36 @@ def test_format_api_error_includes_original_message():
     result = format_api_error(error_msg)
 
     assert error_msg in result["original_message"]
+
+
+def test_format_api_error_with_timeout():
+    """Test that timeout errors get appropriate formatting."""
+    from components.error_display import format_api_error
+
+    error_msg = "Connection timeout after 30s"
+    result = format_api_error(error_msg)
+
+    assert result["type"] == "timeout"
+    assert "connection" in result["title"].lower() or "timeout" in result["title"].lower()
+
+
+def test_format_api_error_with_data_error():
+    """Test that data errors get appropriate formatting."""
+    from components.error_display import format_api_error
+
+    error_msg = "Column 'revenue' not found in dataframe"
+    result = format_api_error(error_msg)
+
+    assert result["type"] == "data"
+    assert "data" in result["title"].lower() or "query" in result["title"].lower()
+
+
+def test_format_api_error_with_model_error():
+    """Test that model/LLM errors get appropriate formatting."""
+    from components.error_display import format_api_error
+
+    error_msg = "Gemini model returned empty response"
+    result = format_api_error(error_msg)
+
+    assert result["type"] == "model"
+    assert "model" in result["title"].lower() or "ai" in result["title"].lower()
