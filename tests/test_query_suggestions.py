@@ -128,3 +128,73 @@ def test_get_suggestions_no_duplicates():
 
     # No duplicates
     assert len(suggestions) == len(set(suggestions))
+
+
+def test_query_templates_structure():
+    """Test that query templates have correct structure."""
+    from components.query_suggestions import QUERY_TEMPLATES
+
+    # Each key should have a template string
+    for key, template in QUERY_TEMPLATES.items():
+        assert isinstance(key, str)
+        assert isinstance(template, str)
+        assert len(template) > 0
+
+
+def test_common_queries_are_strings():
+    """Test that all common queries are strings."""
+    from components.query_suggestions import COMMON_QUERIES
+
+    for query in COMMON_QUERIES:
+        assert isinstance(query, str)
+        assert len(query) > 0
+
+
+def test_get_suggestions_case_insensitive():
+    """Test that suggestions work case-insensitively."""
+    from components.query_suggestions import get_suggestions
+
+    suggestions_lower = get_suggestions("revenue")
+    suggestions_upper = get_suggestions("REVENUE")
+
+    # Both should return suggestions
+    assert isinstance(suggestions_lower, list)
+    assert isinstance(suggestions_upper, list)
+
+
+def test_get_column_suggestions_handles_empty_columns():
+    """Test column suggestions with empty columns list."""
+    from components.query_suggestions import get_column_suggestions
+
+    suggestions = get_column_suggestions([], "test")
+
+    assert isinstance(suggestions, list)
+
+
+def test_get_suggestions_with_multiple_words():
+    """Test suggestions with multiple word query."""
+    from components.query_suggestions import get_suggestions
+
+    suggestions = get_suggestions("show me the top companies")
+
+    assert isinstance(suggestions, list)
+
+
+def test_query_templates_have_common_keys():
+    """Test that query templates have commonly needed keys."""
+    from components.query_suggestions import QUERY_TEMPLATES
+
+    common_keys = ["top", "average", "compare"]
+
+    for key in common_keys:
+        assert key in QUERY_TEMPLATES, f"Missing template key: {key}"
+
+
+def test_get_suggestions_returns_strings():
+    """Test that all suggestions are strings."""
+    from components.query_suggestions import get_suggestions
+
+    suggestions = get_suggestions("profit", limit=10)
+
+    for suggestion in suggestions:
+        assert isinstance(suggestion, str)

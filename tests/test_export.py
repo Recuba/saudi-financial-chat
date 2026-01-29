@@ -138,3 +138,132 @@ def test_export_response_without_code():
     text = export_response_to_text(response_data)
 
     assert "Simple answer" in text
+
+
+def test_export_response_with_none_data():
+    """Test exporting response with None data."""
+    from components.export import export_response_to_text
+
+    response_data = {
+        "type": "text",
+        "data": None,
+    }
+
+    text = export_response_to_text(response_data)
+
+    assert "No data" in text
+
+
+def test_export_response_contains_header():
+    """Test that exported text contains header."""
+    from components.export import export_response_to_text
+
+    response_data = {
+        "type": "text",
+        "data": "Test",
+    }
+
+    text = export_response_to_text(response_data)
+
+    assert "Response Type" in text
+    assert "=" in text  # Header separator
+
+
+def test_export_response_with_code_section():
+    """Test that code is included in export."""
+    from components.export import export_response_to_text
+
+    response_data = {
+        "type": "text",
+        "data": "Result",
+        "code": "df.mean()",
+    }
+
+    text = export_response_to_text(response_data)
+
+    assert "Generated Code" in text
+    assert "df.mean()" in text
+
+
+def test_export_chat_history_with_assistant_response_data():
+    """Test exporting chat history with response data."""
+    from components.export import export_chat_history_to_markdown
+
+    history = [
+        {"role": "user", "content": "Calculate average"},
+        {
+            "role": "assistant",
+            "content": "Here is the result",
+            "response_data": {"type": "text", "data": "42"}
+        },
+    ]
+
+    md = export_chat_history_to_markdown(history)
+
+    assert "User" in md
+    assert "Ra'd AI" in md
+    assert "Calculate average" in md
+
+
+def test_export_chat_history_assistant_without_response_data():
+    """Test exporting chat history without response data."""
+    from components.export import export_chat_history_to_markdown
+
+    history = [
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi there!"},
+    ]
+
+    md = export_chat_history_to_markdown(history)
+
+    assert "Hi there!" in md
+
+
+def test_generate_filename_different_extensions():
+    """Test generating filenames with different extensions."""
+    from components.export import generate_export_filename
+
+    csv_name = generate_export_filename("data", "csv")
+    txt_name = generate_export_filename("data", "txt")
+    md_name = generate_export_filename("data", "md")
+
+    assert csv_name.endswith(".csv")
+    assert txt_name.endswith(".txt")
+    assert md_name.endswith(".md")
+
+
+def test_export_to_csv_preserves_data():
+    """Test that CSV export preserves data."""
+    from components.export import export_to_csv
+
+    df = pd.DataFrame({
+        "name": ["Alice", "Bob"],
+        "value": [100, 200]
+    })
+
+    csv_str = export_to_csv(df)
+
+    assert "Alice" in csv_str
+    assert "Bob" in csv_str
+    assert "100" in csv_str
+    assert "200" in csv_str
+
+
+def test_export_dataframe_to_text_includes_values():
+    """Test that dataframe export includes values."""
+    from components.export import export_response_to_text
+
+    df = pd.DataFrame({
+        "metric": ["revenue"],
+        "value": [1000]
+    })
+
+    response_data = {
+        "type": "dataframe",
+        "data": df,
+    }
+
+    text = export_response_to_text(response_data)
+
+    assert "revenue" in text
+    assert "1000" in text

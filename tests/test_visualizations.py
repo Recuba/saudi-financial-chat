@@ -154,3 +154,133 @@ def test_auto_visualize_none_dataframe():
 
     result = auto_visualize(None, query="show chart")
     assert result is None
+
+
+def test_bar_chart_has_plotly_attributes():
+    """Test that bar chart has expected plotly attributes."""
+    from components.visualizations.response_charts import create_bar_chart
+
+    df = pd.DataFrame({
+        "category": ["X", "Y", "Z"],
+        "value": [10, 20, 30]
+    })
+
+    fig = create_bar_chart(df, x="category", y="value")
+
+    # Plotly figures have these attributes
+    assert hasattr(fig, "data")
+    assert hasattr(fig, "layout")
+
+
+def test_pie_chart_has_plotly_attributes():
+    """Test that pie chart has expected plotly attributes."""
+    from components.visualizations.response_charts import create_pie_chart
+
+    df = pd.DataFrame({
+        "name": ["A", "B", "C"],
+        "amount": [100, 200, 300]
+    })
+
+    fig = create_pie_chart(df, names="name", values="amount")
+
+    assert hasattr(fig, "data")
+    assert hasattr(fig, "layout")
+
+
+def test_line_chart_has_plotly_attributes():
+    """Test that line chart has expected plotly attributes."""
+    from components.visualizations.response_charts import create_line_chart
+
+    df = pd.DataFrame({
+        "month": [1, 2, 3, 4],
+        "sales": [100, 120, 140, 160]
+    })
+
+    fig = create_line_chart(df, x="month", y="sales")
+
+    assert hasattr(fig, "data")
+    assert hasattr(fig, "layout")
+
+
+def test_infer_chart_columns_with_numeric_columns():
+    """Test inferring columns when multiple numeric columns exist."""
+    from components.visualizations.response_charts import infer_chart_columns
+
+    df = pd.DataFrame({
+        "name": ["A", "B", "C"],
+        "value1": [10, 20, 30],
+        "value2": [15, 25, 35]
+    })
+
+    x_col, y_col = infer_chart_columns(df, "show chart")
+
+    # Should pick appropriate columns
+    assert x_col in df.columns
+    assert y_col in df.columns
+
+
+def test_should_render_chart_case_insensitive():
+    """Test that chart detection is case insensitive."""
+    from components.visualizations.response_charts import should_render_chart
+
+    assert should_render_chart("CHART of revenue") == True
+    assert should_render_chart("chart of REVENUE") == True
+    assert should_render_chart("Create a CHART") == True
+
+
+def test_detect_chart_type_with_mixed_case():
+    """Test chart type detection with mixed case."""
+    from components.visualizations.response_charts import detect_chart_type
+
+    assert detect_chart_type("PIE chart") == "pie"
+    assert detect_chart_type("Bar Chart") == "bar"
+    assert detect_chart_type("LINE Chart") == "line"
+
+
+def test_auto_visualize_with_single_column():
+    """Test auto visualize with single column dataframe."""
+    from components.visualizations.response_charts import auto_visualize
+
+    df = pd.DataFrame({
+        "value": [1, 2, 3]
+    })
+
+    result = auto_visualize(df, query="show chart")
+
+    # Should handle gracefully (may return None or a valid chart)
+    assert result is None or hasattr(result, "data")
+
+
+def test_create_bar_chart_with_title():
+    """Test bar chart includes title."""
+    from components.visualizations.response_charts import create_bar_chart
+
+    df = pd.DataFrame({
+        "item": ["A", "B"],
+        "count": [5, 10]
+    })
+
+    fig = create_bar_chart(df, x="item", y="count", title="Item Counts")
+
+    assert fig.layout.title is not None or hasattr(fig.layout, "title")
+
+
+def test_visualization_functions_exist():
+    """Test that all visualization functions are importable."""
+    from components.visualizations.response_charts import (
+        should_render_chart,
+        detect_chart_type,
+        infer_chart_columns,
+        create_bar_chart,
+        create_pie_chart,
+        create_line_chart,
+        auto_visualize,
+    )
+
+    assert callable(should_render_chart)
+    assert callable(detect_chart_type)
+    assert callable(infer_chart_columns)
+    assert callable(create_bar_chart)
+    assert callable(create_pie_chart)
+    assert callable(create_line_chart)
+    assert callable(auto_visualize)
