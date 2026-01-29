@@ -14,6 +14,7 @@ st.set_page_config(
 )
 
 # --- IMPORTS ---
+from pathlib import Path
 from styles.css import get_base_css, get_error_css
 from components.sidebar import render_sidebar
 from components.example_questions import render_example_questions
@@ -26,6 +27,9 @@ from components.error_display import render_api_key_setup_guide
 from utils.data_loader import load_data
 from utils.llm_config import initialize_llm, check_llm_ready
 
+# --- ASSETS ---
+LOGO_PATH = Path(__file__).parent / "assets" / "logo.png"
+
 # --- APPLY STYLES ---
 st.markdown(get_base_css(), unsafe_allow_html=True)
 st.markdown(get_error_css(), unsafe_allow_html=True)
@@ -36,12 +40,17 @@ llm, llm_error = initialize_llm()
 # --- INITIALIZE CHAT HISTORY ---
 initialize_chat_history()
 
-# --- TITLE ---
-st.markdown('<h1 class="brand-title">⚡ Ra\'d | Ra\'d AI</h1>', unsafe_allow_html=True)
-st.markdown(
-    '<p class="brand-subtitle">Saudi Exchange Market Analysis | Facts without Philosophy</p>',
-    unsafe_allow_html=True
-)
+# --- LOGO ---
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    if LOGO_PATH.exists():
+        st.image(str(LOGO_PATH), use_container_width=True)
+    else:
+        st.markdown('<h1 class="brand-title">Ra\'d AI</h1>', unsafe_allow_html=True)
+        st.markdown(
+            '<p class="brand-subtitle">Facts | بدون فلسفة</p>',
+            unsafe_allow_html=True
+        )
 
 # --- SIDEBAR ---
 dataset_choice = render_sidebar()
@@ -88,4 +97,4 @@ else:
 
 # --- FOOTER ---
 st.divider()
-st.caption("Ra'd AI | Powered by PandasAI + Gemini | Saudi Exchange XBRL Data | Early Access")
+st.caption("رعد | Ra'd AI | Powered by PandasAI + Gemini | Saudi Exchange XBRL Data | Early Access")
