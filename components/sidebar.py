@@ -20,6 +20,39 @@ from utils.llm_config import (
     DEFAULT_MODEL,
 )
 
+DATASET_DESCRIPTIONS = {
+    "analytics": "Pre-joined view with company info, metrics, and ratios. Best for most analysis queries.",
+    "filings": "Company metadata including name, symbol, sector, and fiscal year information.",
+    "facts": "Raw financial metrics (revenue, assets, liabilities, etc.) with 16,000+ data points.",
+    "ratios": "Calculated financial ratios (ROE, ROA, margins, etc.) with 18,000+ data points.",
+}
+
+
+def get_dataset_quick_stats(dataset_name: str) -> Dict[str, Any]:
+    """Get quick statistics for a dataset.
+
+    Args:
+        dataset_name: Name of the dataset
+
+    Returns:
+        Dictionary with rows, columns, and date range
+    """
+    data = load_data()
+    df = data[dataset_name]
+
+    stats = {
+        "rows": len(df),
+        "columns": len(df.columns),
+    }
+
+    # Add date range if available
+    if "period_end" in df.columns:
+        stats["date_range"] = f"{df['period_end'].min()} to {df['period_end'].max()}"
+    elif "fiscal_year" in df.columns:
+        stats["date_range"] = f"{df['fiscal_year'].min()} - {df['fiscal_year'].max()}"
+
+    return stats
+
 
 def render_database_info() -> None:
     """Render the database information section in collapsible expander."""
@@ -54,7 +87,7 @@ def render_database_info() -> None:
 
 
 def render_dataset_selector() -> str:
-    """Render dataset selection dropdown.
+    """Render dataset selection with descriptions and quick stats.
 
     Returns:
         Selected dataset name
@@ -68,15 +101,19 @@ def render_dataset_selector() -> str:
         help="Select which dataset to analyze with your queries"
     )
 
-    # Show dataset description
-    descriptions = {
-        "analytics": "Pre-joined view with all metrics and ratios - best for most queries",
-        "filings": "Company metadata including sector, symbol, and fiscal year info",
-        "facts": "Raw financial metrics (16,000+ data points)",
-        "ratios": "Calculated financial ratios (18,000+ data points)"
-    }
+    # Show description
+    st.caption(DATASET_DESCRIPTIONS.get(dataset_choice, ""))
 
-    st.caption(descriptions.get(dataset_choice, ""))
+    # Show quick stats
+    stats = get_dataset_quick_stats(dataset_choice)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.caption(f"📊 {stats['rows']:,} rows")
+    with col2:
+        st.caption(f"📋 {stats['columns']} columns")
+
+    if "date_range" in stats:
+        st.caption(f"📅 {stats['date_range']}")
 
     return dataset_choice
 

@@ -36,3 +36,25 @@ def test_database_info_can_be_collapsed():
 
     # Function should use expander for collapsible behavior
     assert "expander" in source.lower()
+
+
+def test_dataset_descriptions_exist():
+    """Test that all datasets have descriptions."""
+    from components.sidebar import DATASET_DESCRIPTIONS
+    from utils.data_loader import DATASET_DISPLAY_NAMES
+
+    for dataset_key in DATASET_DISPLAY_NAMES.keys():
+        assert dataset_key in DATASET_DESCRIPTIONS
+        assert len(DATASET_DESCRIPTIONS[dataset_key]) > 10
+
+
+def test_get_dataset_quick_stats():
+    """Test getting quick stats for a dataset."""
+    from components.sidebar import get_dataset_quick_stats
+
+    stats = get_dataset_quick_stats("analytics")
+
+    assert "rows" in stats
+    assert "columns" in stats
+    assert isinstance(stats["rows"], int)
+    assert isinstance(stats["columns"], int)
