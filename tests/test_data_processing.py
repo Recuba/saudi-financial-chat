@@ -1,7 +1,13 @@
 # tests/test_data_processing.py
 import pytest
 import pandas as pd
-from utils.data_processing import normalize_to_sar
+from utils.data_processing import (
+    normalize_to_sar,
+    format_sar_abbreviated,
+    format_percentage,
+    format_ratio,
+    get_column_type
+)
 
 def test_normalize_scale_1():
     """Values with scale_factor=1 should remain unchanged."""
@@ -38,3 +44,64 @@ def test_normalize_handles_null():
     })
     result = normalize_to_sar(df, ['revenue'])
     assert pd.isna(result['revenue'].iloc[0])
+
+
+class TestFormatSarAbbreviated:
+    def test_billions(self):
+        assert format_sar_abbreviated(1_500_000_000) == 'SAR 1.5B'
+
+    def test_millions(self):
+        assert format_sar_abbreviated(2_500_000) == 'SAR 2.5M'
+
+    def test_thousands(self):
+        assert format_sar_abbreviated(5_500) == 'SAR 5.5K'
+
+    def test_small_values(self):
+        assert format_sar_abbreviated(500) == 'SAR 500'
+
+    def test_negative(self):
+        assert format_sar_abbreviated(-1_500_000_000) == 'SAR -1.5B'
+
+    def test_null(self):
+        assert format_sar_abbreviated(None) == '-'
+
+
+class TestFormatPercentage:
+    def test_positive(self):
+        assert format_percentage(0.25) == '25.0%'
+
+    def test_negative(self):
+        assert format_percentage(-0.10) == '-10.0%'
+
+    def test_null(self):
+        assert format_percentage(None) == '-'
+
+
+class TestFormatRatio:
+    def test_normal(self):
+        assert format_ratio(2.15) == '2.15x'
+
+    def test_null(self):
+        assert format_ratio(None) == '-'
+
+
+class TestGetColumnType:
+    def test_currency_column(self):
+        assert get_column_type('revenue') == 'currency'
+        assert get_column_type('net_profit') == 'currency'
+
+    def test_percentage_column(self):
+        assert get_column_type('roe') == 'percentage'
+        assert get_column_type('gross_margin') == 'percentage'
+
+    def test_ratio_column(self):
+        assert get_column_type('current_ratio') == 'ratio'
+        assert get_column_type('debt_to_equity') == 'ratio'
+
+    def test_ratio_not_currency(self):
+        # These should be ratio, not currency (bug fix verification)
+        assert get_column_type('cash_conversion') == 'ratio'
+        assert get_column_type('ocf_to_current_liabilities') == 'ratio'
+
+    def test_unknown_column(self):
+        assert get_column_type('company_name') == 'text'

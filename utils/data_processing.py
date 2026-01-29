@@ -52,8 +52,9 @@ def normalize_to_sar(
     for col in cols_to_normalize:
         if col not in result.columns:
             continue
-        # Multiply value by scale_factor to get actual SAR amount
-        result[col] = result[col] * result[scale_column]
+        # Fill NaN scale factors with 1 to avoid propagating NaN
+        scale = result[scale_column].fillna(1)
+        result[col] = result[col] * scale
 
     return result
 
@@ -70,18 +71,18 @@ def get_column_type(column_name: str) -> str:
     """
     col_lower = column_name.lower()
 
-    # Check for ratio columns (percentages stored as decimals)
-    if col_lower in ['roe', 'roa', 'gross_margin', 'net_margin', 'operating_margin']:
-        return 'percentage'
+    # Check against module constants first
+    if col_lower in [c.lower() for c in CURRENCY_COLUMNS]:
+        return 'currency'
 
-    # Check for ratio columns (displayed with 'x')
-    if col_lower in ['current_ratio', 'quick_ratio', 'debt_to_equity', 'debt_to_assets',
-                     'interest_coverage', 'asset_turnover', 'inventory_turnover']:
+    if col_lower in [c.lower() for c in RATIO_COLUMNS]:
+        # Some ratios are percentages (stored as decimals)
+        if col_lower in ['roe', 'roa', 'gross_margin', 'net_margin', 'operating_margin']:
+            return 'percentage'
         return 'ratio'
 
-    # Check for currency columns
-    if col_lower in CURRENCY_COLUMNS or any(kw in col_lower for kw in
-        ['revenue', 'profit', 'asset', 'equity', 'liability', 'cash', 'expense', 'sar']):
+    # Fallback keyword matching for unlisted columns
+    if any(kw in col_lower for kw in ['revenue', 'profit', 'asset', 'equity', 'liability', 'cash', 'expense', 'sar']):
         return 'currency'
 
     return 'text'
