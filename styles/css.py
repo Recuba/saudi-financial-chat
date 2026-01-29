@@ -533,6 +533,22 @@ hr {{
     border: 1px solid rgba(212, 168, 75, 0.3) !important;
     border-radius: var(--radius-md) !important;
 }}
+
+/* Sidebar Metric Labels - Prevent Truncation */
+[data-testid="stSidebar"] [data-testid="stMetric"] {{
+    min-width: 80px !important;
+}}
+
+[data-testid="stSidebar"] [data-testid="stMetricLabel"] {{
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    font-size: var(--font-size-sm) !important;
+}}
+
+[data-testid="stSidebar"] [data-testid="stMetricValue"] {{
+    font-size: var(--font-size-lg) !important;
+}}
 </style>
 """
 
