@@ -22,37 +22,35 @@ from utils.llm_config import (
 
 
 def render_database_info() -> None:
-    """Render the database information section with tooltips."""
-    st.header("Database Info")
-
+    """Render the database information section in collapsible expander."""
     info = get_dataset_info()
 
-    # Create metrics with full values (no truncation)
-    col1, col2 = st.columns(2)
+    with st.expander("📊 Database Info", expanded=False):
+        col1, col2 = st.columns(2)
 
-    with col1:
-        st.metric(
-            label="Companies",
-            value=f"{info['companies']:,}",
-            help="Unique companies in the database"
-        )
-        st.metric(
-            label="Metrics",
-            value=f"{info['metrics']:,}",
-            help="Unique financial metrics (e.g., revenue, assets)"
-        )
+        with col1:
+            st.metric(
+                label="Companies",
+                value=f"{info['companies']:,}",
+                help="Unique companies in the database"
+            )
+            st.metric(
+                label="Metrics",
+                value=f"{info['metrics']:,}",
+                help="Unique financial metrics"
+            )
 
-    with col2:
-        st.metric(
-            label="Periods",
-            value=f"{info['periods']:,}",
-            help="Total fiscal periods across all companies"
-        )
-        st.metric(
-            label="Ratios",
-            value=f"{info['ratios']:,}",
-            help="Calculated financial ratios (e.g., ROE, ROA)"
-        )
+        with col2:
+            st.metric(
+                label="Periods",
+                value=f"{info['periods']:,}",
+                help="Total fiscal periods"
+            )
+            st.metric(
+                label="Ratios",
+                value=f"{info['ratios']:,}",
+                help="Calculated financial ratios"
+            )
 
 
 def render_dataset_selector() -> str:
