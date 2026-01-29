@@ -79,3 +79,39 @@ def test_format_api_error_with_model_error():
 
     assert result["type"] == "model"
     assert "model" in result["title"].lower() or "ai" in result["title"].lower()
+
+
+def test_format_api_error_with_response_format_error():
+    """Test that response format errors get helpful suggestions."""
+    from components.error_display import format_api_error
+
+    error_msg = "result must be in the format of dictionary"
+
+    result = format_api_error(error_msg)
+
+    assert result["type"] == "response_format"
+    assert "rephras" in result["steps"][0].lower()
+
+
+def test_error_includes_suggested_queries():
+    """Test that errors include query suggestions when applicable."""
+    from components.error_display import get_suggested_queries
+
+    error_type = "response_format"
+
+    suggestions = get_suggested_queries(error_type)
+
+    assert isinstance(suggestions, list)
+    assert len(suggestions) >= 2
+
+
+def test_format_error_with_query_context():
+    """Test formatting error with original query context."""
+    from components.error_display import format_error_with_context
+
+    error_msg = "No data found"
+    query = "What is the revenue for NonExistent Company?"
+
+    result = format_error_with_context(error_msg, query)
+
+    assert "query" in result or "NonExistent" in result.get("steps", [""])[0]

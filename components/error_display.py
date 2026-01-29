@@ -92,6 +92,69 @@ GENERIC_ERROR: Dict[str, Any] = {
     "action_label": "Retry",
 }
 
+# Suggested queries for different error types
+SUGGESTED_QUERIES: Dict[str, List[str]] = {
+    "response_format": [
+        "What is the total revenue for [Company] in 2023?",
+        "Show a table of top 10 companies by net profit",
+        "Compare revenue between Tech and Finance sectors",
+    ],
+    "data": [
+        "How many companies are in the database?",
+        "What sectors are available?",
+        "List all fiscal years in the data",
+    ],
+    "generic": [
+        "What is the average ROE by sector?",
+        "Which companies have the highest revenue?",
+    ],
+}
+
+
+def get_suggested_queries(error_type: str) -> List[str]:
+    """Get suggested queries based on error type.
+
+    Args:
+        error_type: Type of error that occurred
+
+    Returns:
+        List of suggested query strings
+    """
+    return SUGGESTED_QUERIES.get(error_type, SUGGESTED_QUERIES["generic"])
+
+
+def format_error_with_context(
+    error_message: str,
+    query: str = "",
+    dataset: str = ""
+) -> Dict[str, Any]:
+    """Format error with additional context about the query.
+
+    Args:
+        error_message: Raw error message
+        query: Original user query
+        dataset: Dataset being queried
+
+    Returns:
+        Enhanced error info dictionary
+    """
+    # Get base error info
+    error_info = format_api_error(error_message)
+
+    # Add context-specific suggestions
+    if query:
+        # Add suggestion to modify query
+        query_tips = [
+            f"Your query was: \"{query[:50]}{'...' if len(query) > 50 else ''}\"",
+            "Try being more specific about column names or metrics",
+        ]
+        error_info["steps"] = query_tips + error_info["steps"]
+
+    # Add suggested queries
+    error_info["suggested_queries"] = get_suggested_queries(error_info["type"])
+
+    return error_info
+
 
 def format_api_error(error_message: str) -> Dict[str, Any]:
     """
