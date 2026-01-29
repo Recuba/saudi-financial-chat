@@ -246,17 +246,44 @@ h1, h2, h3 {{
     box-shadow: var(--shadow-gold) !important;
 }}
 
-/* Chat Input */
+/* Chat Input Container */
+[data-testid="stChatInput"] {{
+    background: var(--bg-card) !important;
+    border: 2px solid var(--gold-primary) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: var(--spacing-sm) !important;
+    box-shadow: 0 0 15px rgba(212, 168, 75, 0.2) !important;
+}}
+
 [data-testid="stChatInput"] textarea {{
     background: var(--bg-input) !important;
-    border: 1px solid rgba(212, 168, 75, 0.3) !important;
+    border: none !important;
     border-radius: var(--radius-md) !important;
     color: var(--text-primary) !important;
+    font-size: var(--font-size-base) !important;
+    padding: var(--spacing-md) !important;
+}}
+
+[data-testid="stChatInput"] textarea::placeholder {{
+    color: var(--text-muted) !important;
 }}
 
 [data-testid="stChatInput"] textarea:focus {{
-    border-color: var(--gold-primary) !important;
-    box-shadow: var(--shadow-focus) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}}
+
+[data-testid="stChatInput"] button {{
+    background: var(--gold-gradient) !important;
+    border: none !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--bg-dark) !important;
+}}
+
+[data-testid="stChatInput"] button:hover {{
+    box-shadow: var(--shadow-gold) !important;
+    transform: scale(1.05) !important;
 }}
 
 /* Chat Messages */

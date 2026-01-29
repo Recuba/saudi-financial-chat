@@ -41,7 +41,7 @@ llm, llm_error = initialize_llm()
 initialize_chat_history()
 
 # --- LOGO ---
-col1, col2, col3 = st.columns([1, 2, 1])
+col1, col2, col3 = st.columns([1, 6, 1])
 with col2:
     if LOGO_PATH.exists():
         st.image(str(LOGO_PATH), use_container_width=True)
