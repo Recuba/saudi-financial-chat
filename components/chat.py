@@ -26,7 +26,37 @@ except ImportError:
 
 from components.error_display import format_api_error, render_error_banner
 
+# Import formatting utilities with graceful fallback
+try:
+    from utils.data_processing import format_dataframe_for_display, CURRENCY_COLUMNS
+    HAS_FORMATTING = True
+except ImportError:
+    HAS_FORMATTING = False
+    CURRENCY_COLUMNS = []
+
 logger = logging.getLogger(__name__)
+
+
+def should_format_dataframe(df) -> bool:
+    """Check if a DataFrame contains financial columns that should be formatted.
+
+    Args:
+        df: DataFrame to check
+
+    Returns:
+        True if DataFrame has financial columns
+    """
+    if df is None or not hasattr(df, 'columns'):
+        return False
+
+    if not HAS_FORMATTING:
+        return False
+
+    # Check for financial columns
+    df_cols_lower = [c.lower() for c in df.columns]
+    currency_cols_lower = [c.lower() for c in CURRENCY_COLUMNS]
+
+    return any(col in currency_cols_lower for col in df_cols_lower)
 
 
 def format_response(response: Any) -> Dict[str, Any]:
@@ -147,7 +177,31 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
 
     with tab_result:
         if response_type == "dataframe":
-            st.dataframe(data, use_container_width=True, hide_index=True)
+            # Format DataFrame for display if it contains financial columns
+            display_data = data
+            if should_format_dataframe(data):
+                try:
+                    display_data = format_dataframe_for_display(
+                        data,
+                        normalize=False,  # Data should already be normalized
+                        format_values=True
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not format DataFrame: {e}")
+                    display_data = data
+
+            st.dataframe(display_data, use_container_width=True, hide_index=True)
+
+            # Add export button for query results
+            if pd is not None and isinstance(data, pd.DataFrame) and len(data) > 0:
+                csv_data = data.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download CSV",
+                    data=csv_data,
+                    file_name="query_result.csv",
+                    mime="text/csv",
+                    key=f"download_{datetime.now().timestamp()}"
+                )
 
         elif response_type == "chart":
             try:
