@@ -34,6 +34,33 @@ except ImportError:
     HAS_FORMATTING = False
     CURRENCY_COLUMNS = []
 
+# Import chart generation utilities
+try:
+    from utils.chart_generator import (
+        detect_chart_intent,
+        extract_chart_parameters,
+        generate_chart_from_data,
+        get_chart_suggestions,
+    )
+    HAS_CHART_GENERATOR = True
+except ImportError:
+    HAS_CHART_GENERATOR = False
+
+# Import financial charts
+try:
+    from components.visualizations.financial_charts import (
+        create_income_statement_waterfall,
+        create_ratio_radar_chart,
+        create_sector_sunburst,
+        create_risk_return_scatter,
+        create_sector_performance_heatmap,
+        create_yoy_comparison_chart,
+        FINANCIAL_COLORS,
+    )
+    HAS_FINANCIAL_CHARTS = True
+except ImportError:
+    HAS_FINANCIAL_CHARTS = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,6 +84,82 @@ def should_format_dataframe(df) -> bool:
     currency_cols_lower = [c.lower() for c in CURRENCY_COLUMNS]
 
     return any(col in currency_cols_lower for col in df_cols_lower)
+
+
+def try_generate_enhanced_chart(
+    query: str,
+    df: Any,
+    response_data: Dict[str, Any]
+) -> Optional[Any]:
+    """Attempt to generate an enhanced financial chart based on query.
+
+    Args:
+        query: User's original query
+        df: Source DataFrame
+        response_data: PandasAI response data
+
+    Returns:
+        Plotly figure or None
+    """
+    if not HAS_CHART_GENERATOR or not HAS_FINANCIAL_CHARTS:
+        return None
+
+    if df is None or not hasattr(df, 'columns'):
+        return None
+
+    try:
+        # Detect chart intent
+        intent = detect_chart_intent(query)
+
+        if not intent.get("wants_chart") or intent.get("confidence", 0) < 0.5:
+            return None
+
+        chart_type = intent.get("chart_type")
+        if not chart_type or chart_type == "auto":
+            return None
+
+        # Extract parameters
+        params = extract_chart_parameters(query, df)
+
+        # Generate chart
+        fig = generate_chart_from_data(df, chart_type, params)
+
+        return fig
+
+    except Exception as e:
+        logger.warning(f"Could not generate enhanced chart: {e}")
+        return None
+
+
+def render_chart_suggestions(df: Any) -> None:
+    """Render chart suggestions based on available data.
+
+    Args:
+        df: Source DataFrame
+    """
+    if not HAS_CHART_GENERATOR or st is None:
+        return
+
+    try:
+        suggestions = get_chart_suggestions(df)
+
+        if suggestions:
+            with st.expander("Chart Suggestions", expanded=False):
+                st.caption("Based on your data, try these visualizations:")
+
+                cols = st.columns(min(len(suggestions), 3))
+                for i, suggestion in enumerate(suggestions[:6]):
+                    with cols[i % 3]:
+                        if st.button(
+                            f"{suggestion['title']}",
+                            key=f"chart_suggest_{i}",
+                            help=suggestion['description']
+                        ):
+                            st.session_state.query = suggestion['query']
+                            st.rerun()
+
+    except Exception as e:
+        logger.warning(f"Could not render chart suggestions: {e}")
 
 
 def format_response(response: Any) -> Dict[str, Any]:
@@ -173,7 +276,12 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
         st.error(response_data.get("message", "An error occurred"))
         return
 
-    tab_result, tab_code = st.tabs(["Result", "Code"])
+    # Create tabs - add Chart tab if enhanced charts available
+    if HAS_FINANCIAL_CHARTS and response_type == "dataframe":
+        tab_result, tab_chart, tab_code = st.tabs(["Result", "Charts", "Code"])
+    else:
+        tab_result, tab_code = st.tabs(["Result", "Code"])
+        tab_chart = None
 
     with tab_result:
         if response_type == "dataframe":
@@ -203,7 +311,157 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
                     key=f"download_{datetime.now().timestamp()}"
                 )
 
-        elif response_type == "chart":
+    # Chart tab for enhanced visualizations
+    if tab_chart is not None and response_type == "dataframe":
+        with tab_chart:
+            if pd is not None and isinstance(data, pd.DataFrame) and len(data) > 0:
+                st.caption("Generate advanced financial charts from your data:")
+
+                # Quick chart options
+                chart_cols = st.columns(4)
+
+                with chart_cols[0]:
+                    if st.button("Bar Chart", key=f"quick_bar_{datetime.now().timestamp()}"):
+                        try:
+                            import plotly.express as px
+                            # Get first numeric column for values
+                            numeric_cols = data.select_dtypes(include=['number']).columns.tolist()
+                            cat_cols = data.select_dtypes(include=['object']).columns.tolist()
+
+                            if numeric_cols and cat_cols:
+                                fig = px.bar(
+                                    data.head(15),
+                                    x=cat_cols[0],
+                                    y=numeric_cols[0],
+                                    color=cat_cols[0] if len(cat_cols) > 0 else None,
+                                    title=f"{numeric_cols[0].replace('_', ' ').title()} by {cat_cols[0].replace('_', ' ').title()}"
+                                )
+                                fig.update_layout(
+                                    paper_bgcolor="#0E0E0E",
+                                    plot_bgcolor="#0E0E0E",
+                                    font_color="#FFFFFF"
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                        except Exception as e:
+                            st.error(f"Could not create bar chart: {e}")
+
+                with chart_cols[1]:
+                    if st.button("Pie Chart", key=f"quick_pie_{datetime.now().timestamp()}"):
+                        try:
+                            import plotly.express as px
+                            numeric_cols = data.select_dtypes(include=['number']).columns.tolist()
+                            cat_cols = data.select_dtypes(include=['object']).columns.tolist()
+
+                            if numeric_cols and cat_cols:
+                                fig = px.pie(
+                                    data.head(10),
+                                    values=numeric_cols[0],
+                                    names=cat_cols[0],
+                                    title=f"{numeric_cols[0].replace('_', ' ').title()} Distribution"
+                                )
+                                fig.update_layout(
+                                    paper_bgcolor="#0E0E0E",
+                                    plot_bgcolor="#0E0E0E",
+                                    font_color="#FFFFFF"
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                        except Exception as e:
+                            st.error(f"Could not create pie chart: {e}")
+
+                with chart_cols[2]:
+                    if st.button("Line Trend", key=f"quick_line_{datetime.now().timestamp()}"):
+                        try:
+                            import plotly.express as px
+                            numeric_cols = data.select_dtypes(include=['number']).columns.tolist()
+
+                            if 'fiscal_year' in data.columns and numeric_cols:
+                                fig = px.line(
+                                    data.sort_values('fiscal_year'),
+                                    x='fiscal_year',
+                                    y=numeric_cols[0],
+                                    title=f"{numeric_cols[0].replace('_', ' ').title()} Over Time"
+                                )
+                                fig.update_layout(
+                                    paper_bgcolor="#0E0E0E",
+                                    plot_bgcolor="#0E0E0E",
+                                    font_color="#FFFFFF"
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                            else:
+                                st.info("Need fiscal_year column for trend chart")
+                        except Exception as e:
+                            st.error(f"Could not create line chart: {e}")
+
+                with chart_cols[3]:
+                    if st.button("Scatter Plot", key=f"quick_scatter_{datetime.now().timestamp()}"):
+                        try:
+                            import plotly.express as px
+                            numeric_cols = data.select_dtypes(include=['number']).columns.tolist()
+
+                            if len(numeric_cols) >= 2:
+                                fig = px.scatter(
+                                    data,
+                                    x=numeric_cols[0],
+                                    y=numeric_cols[1],
+                                    title=f"{numeric_cols[0]} vs {numeric_cols[1]}"
+                                )
+                                fig.update_layout(
+                                    paper_bgcolor="#0E0E0E",
+                                    plot_bgcolor="#0E0E0E",
+                                    font_color="#FFFFFF"
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                            else:
+                                st.info("Need at least 2 numeric columns for scatter plot")
+                        except Exception as e:
+                            st.error(f"Could not create scatter plot: {e}")
+
+                # Advanced chart options
+                with st.expander("Advanced Financial Charts", expanded=False):
+                    adv_cols = st.columns(3)
+
+                    with adv_cols[0]:
+                        if 'sector' in data.columns and st.button("Sector Sunburst", key=f"adv_sunburst_{datetime.now().timestamp()}"):
+                            try:
+                                from components.visualizations.financial_charts import create_sector_sunburst
+                                numeric_cols = data.select_dtypes(include=['number']).columns.tolist()
+                                if numeric_cols:
+                                    fig = create_sector_sunburst(data, value_column=numeric_cols[0])
+                                    if fig:
+                                        st.plotly_chart(fig, use_container_width=True)
+                            except Exception as e:
+                                st.error(f"Could not create sunburst: {e}")
+
+                    with adv_cols[1]:
+                        if 'sector' in data.columns and st.button("Sector Heatmap", key=f"adv_heatmap_{datetime.now().timestamp()}"):
+                            try:
+                                from components.visualizations.financial_charts import create_sector_performance_heatmap
+                                numeric_cols = data.select_dtypes(include=['number']).columns.tolist()[:5]
+                                if numeric_cols:
+                                    fig = create_sector_performance_heatmap(data, metrics=numeric_cols)
+                                    if fig:
+                                        st.plotly_chart(fig, use_container_width=True)
+                            except Exception as e:
+                                st.error(f"Could not create heatmap: {e}")
+
+                    with adv_cols[2]:
+                        if st.button("Risk-Return", key=f"adv_riskret_{datetime.now().timestamp()}"):
+                            try:
+                                from components.visualizations.financial_charts import create_risk_return_scatter
+                                if 'roe' in data.columns or 'roa' in data.columns:
+                                    fig = create_risk_return_scatter(data)
+                                    if fig:
+                                        st.plotly_chart(fig, use_container_width=True)
+                                else:
+                                    st.info("Need ROE or ROA columns for risk-return chart")
+                            except Exception as e:
+                                st.error(f"Could not create risk-return chart: {e}")
+            else:
+                st.info("No data available for charting")
+
+    # Handle non-dataframe responses in tab_result
+    with tab_result:
+        if response_type == "chart":
             try:
                 if Image is not None and data:
                     # Chart data can be file path or bytes

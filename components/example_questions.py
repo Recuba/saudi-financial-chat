@@ -43,6 +43,55 @@ EXAMPLE_QUESTIONS = {
             "icon": "📊"
         },
     ],
+    "Visualizations": [
+        {
+            "label": "Sector sunburst by revenue",
+            "query": "Show a sunburst chart of market composition by revenue across sectors",
+            "icon": "🎯"
+        },
+        {
+            "label": "Risk-return scatter plot",
+            "query": "Create a risk-return scatter plot showing ROE vs debt-to-equity for all companies",
+            "icon": "📍"
+        },
+        {
+            "label": "Sector performance heatmap",
+            "query": "Show a heatmap comparing sector performance across ROE, ROA, and margins",
+            "icon": "🔥"
+        },
+        {
+            "label": "Revenue trend comparison",
+            "query": "Show revenue and net profit trend over years for the top 5 companies by revenue",
+            "icon": "📈"
+        },
+        {
+            "label": "YoY revenue comparison",
+            "query": "Compare revenue year over year 2023 vs 2024 for top 10 companies",
+            "icon": "🔄"
+        },
+    ],
+    "Financial Statements": [
+        {
+            "label": "Income statement waterfall",
+            "query": "Show income statement waterfall chart from revenue to net profit for Saudi Aramco",
+            "icon": "💧"
+        },
+        {
+            "label": "Balance sheet composition",
+            "query": "Show balance sheet composition with assets, liabilities and equity breakdown",
+            "icon": "⚖️"
+        },
+        {
+            "label": "Financial ratio radar",
+            "query": "Create a radar chart showing financial ratios for top banking company",
+            "icon": "🎯"
+        },
+        {
+            "label": "Financial dashboard",
+            "query": "Show a comprehensive financial dashboard with key metrics and KPIs",
+            "icon": "📋"
+        },
+    ],
     "Exploration": [
         {
             "label": "Sector breakdown",
@@ -53,6 +102,11 @@ EXAMPLE_QUESTIONS = {
             "label": "Average current ratio",
             "query": "What is the average current ratio by sector?",
             "icon": "💰"
+        },
+        {
+            "label": "Most profitable sectors",
+            "query": "Which sectors have the highest average net profit margin?",
+            "icon": "🏆"
         },
     ]
 }

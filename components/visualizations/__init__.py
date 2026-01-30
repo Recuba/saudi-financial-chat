@@ -4,6 +4,10 @@ Visualization Suite for Saudi Financial Chat Application.
 This package provides comprehensive charting and visualization components
 using ECharts, Plotly, Plost, and Agraph for financial data visualization.
 
+Includes advanced financial charts specifically designed for audited
+financial statement analysis including waterfall charts, ratio analysis,
+sector comparisons, and trend analysis.
+
 Theme Colors:
     - Gold: #D4A84B, #E8C872, #B8860B
     - Background: #0E0E0E, #1A1A1A
@@ -38,6 +42,19 @@ __all__ = [
     "render_relationship_graph",
     "RelationshipType",
     "SECTOR_COLORS",
+    # Financial Charts (NEW)
+    "create_income_statement_waterfall",
+    "create_balance_sheet_composition",
+    "create_ratio_radar_chart",
+    "create_ratio_comparison_bars",
+    "create_multi_year_trend",
+    "create_yoy_comparison_chart",
+    "create_sector_sunburst",
+    "create_sector_performance_heatmap",
+    "create_risk_return_scatter",
+    "create_financial_dashboard",
+    "recommend_chart",
+    "FINANCIAL_COLORS",
 ]
 
 # Theme constants available without imports
@@ -231,3 +248,59 @@ def get_installation_instructions() -> str:
     if missing:
         return f"pip install {' '.join(missing)}"
     return "All visualization dependencies are installed."
+
+
+# Financial Charts imports (core functionality, always available with plotly)
+try:
+    from .financial_charts import (
+        create_income_statement_waterfall,
+        create_balance_sheet_composition,
+        create_ratio_radar_chart,
+        create_ratio_comparison_bars,
+        create_multi_year_trend,
+        create_yoy_comparison_chart,
+        create_sector_sunburst,
+        create_sector_performance_heatmap,
+        create_risk_return_scatter,
+        create_financial_dashboard,
+        recommend_chart,
+        FINANCIAL_COLORS,
+    )
+except ImportError as e:
+    import warnings
+    warnings.warn(f"Financial chart components unavailable: {e}. Install plotly.")
+
+    def create_income_statement_waterfall(*args, **kwargs):
+        raise ImportError("plotly required for waterfall charts")
+
+    def create_balance_sheet_composition(*args, **kwargs):
+        raise ImportError("plotly required for balance sheet charts")
+
+    def create_ratio_radar_chart(*args, **kwargs):
+        raise ImportError("plotly required for radar charts")
+
+    def create_ratio_comparison_bars(*args, **kwargs):
+        raise ImportError("plotly required for bar charts")
+
+    def create_multi_year_trend(*args, **kwargs):
+        raise ImportError("plotly required for trend charts")
+
+    def create_yoy_comparison_chart(*args, **kwargs):
+        raise ImportError("plotly required for comparison charts")
+
+    def create_sector_sunburst(*args, **kwargs):
+        raise ImportError("plotly required for sunburst charts")
+
+    def create_sector_performance_heatmap(*args, **kwargs):
+        raise ImportError("plotly required for heatmaps")
+
+    def create_risk_return_scatter(*args, **kwargs):
+        raise ImportError("plotly required for scatter plots")
+
+    def create_financial_dashboard(*args, **kwargs):
+        raise ImportError("plotly required for dashboards")
+
+    def recommend_chart(*args, **kwargs):
+        return {"chart_type": None, "function": None, "params": {}, "description": ""}
+
+    FINANCIAL_COLORS = {}
