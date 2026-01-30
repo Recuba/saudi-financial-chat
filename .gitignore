@@ -15,3 +15,4 @@ venv/
 *.tmp
 *.temp
 temp_*.csv
+.coverage
