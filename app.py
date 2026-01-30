@@ -89,10 +89,21 @@ else:
             selected_df = apply_filters(selected_df, filters)
             st.sidebar.caption(f"Filtered: {len(selected_df):,} rows")
 
-        # Create tabs for Chat and Compare modes
-        tab_chat, tab_compare = st.tabs(["Chat", "Compare"])
+        # Initialize active tab in session state
+        if "active_tab" not in st.session_state:
+            st.session_state.active_tab = "Chat"
 
-        with tab_chat:
+        # Mode selection (radio buttons instead of tabs for better chat_input compatibility)
+        mode = st.radio(
+            "Mode",
+            ["Chat", "Compare"],
+            horizontal=True,
+            label_visibility="collapsed",
+            key="mode_selector"
+        )
+        st.session_state.active_tab = mode
+
+        if mode == "Chat":
             # Data preview (expanded by default with 5 rows)
             from components.data_preview import render_data_preview
             render_data_preview(selected_df, expanded=True, max_rows=5)
@@ -111,7 +122,7 @@ else:
 
             st.divider()
 
-            # Chat input
+            # Chat input (now outside of tabs, will render properly)
             prompt = render_chat_input()
 
             # Query suggestions
@@ -157,7 +168,7 @@ else:
                     else:
                         render_ai_response(response)
 
-        with tab_compare:
+        else:  # Compare mode
             from components.comparison_mode import render_comparison_mode
             render_comparison_mode(selected_df)
 
