@@ -25,10 +25,11 @@ Ra'd AI v2 transforms the chatbot from a manual dataset-selection model to an in
   2. All 7 parquet views accessible (tasi_financials, latest_financials, latest_annual, company_annual_timeseries, sector_benchmarks_latest, top_bottom_performers, ticker_index)
   3. PandasAI receives DataFrame and can execute queries successfully
   4. Query results render correctly (no regression from current behavior)
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 01-01: TBD
+- [ ] 01-01-PLAN.md - Data layer foundation (refactor data_loader.py, update tests)
+- [ ] 01-02-PLAN.md - Router and integration (create query_router.py, update app.py, simplify sidebar)
 
 ### Phase 2: Query Routing Engine
 **Goal**: System automatically routes queries to the optimal data view based on intent
@@ -66,7 +67,7 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Layer Refactor | 0/? | Not started | - |
+| 1. Data Layer Refactor | 0/2 | Planned | - |
 | 2. Query Routing Engine | 0/? | Not started | - |
 | 3. UI Simplification | 0/? | Not started | - |
 
@@ -74,3 +75,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 *Roadmap created: 2026-01-31*
 *Depth: quick (3 phases)*
 *Coverage: 11/11 v1 requirements mapped*
+*Phase 1 planned: 2026-02-01*
