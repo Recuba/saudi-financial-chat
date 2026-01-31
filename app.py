@@ -30,7 +30,8 @@ from components.chat import (
 )
 from components.error_display import render_api_key_setup_guide
 from components.session_manager import initialize_session, add_recent_query
-from utils.data_loader import load_data
+from utils.data_loader import load_tasi_data
+from utils.query_router import route_query
 from utils.llm_config import initialize_llm, check_llm_ready
 
 # --- ASSETS ---
@@ -62,7 +63,7 @@ with col2:
         )
 
 # --- SIDEBAR ---
-dataset_choice, model_changed = render_sidebar()
+model_changed = render_sidebar()
 
 # --- RE-INITIALIZE LLM IF MODEL CHANGED ---
 if model_changed:
@@ -77,17 +78,15 @@ if not check_llm_ready():
 else:
     # Load data
     try:
-        data = load_data()
-        selected_df = data[dataset_choice]
+        data = load_tasi_data()
 
-        # Advanced filters
+        # Advanced filters (applied to main view for filtering)
         from components.filters.advanced_filters import render_advanced_filters, apply_filters
         with st.sidebar:
-            filters = render_advanced_filters(selected_df)
+            filters = render_advanced_filters(data["tasi_financials"])
 
-        if filters:
-            selected_df = apply_filters(selected_df, filters)
-            st.sidebar.caption(f"Filtered: {len(selected_df):,} rows")
+        # Base filter state for query-time filtering
+        base_filters = filters if filters else None
 
         # Initialize active tab in session state
         if "active_tab" not in st.session_state:
@@ -104,9 +103,9 @@ else:
         st.session_state.active_tab = mode
 
         if mode == "Chat":
-            # Data preview (expanded by default with 5 rows)
+            # Data preview (show main dataset)
             from components.data_preview import render_data_preview
-            render_data_preview(selected_df, expanded=True, max_rows=5)
+            render_data_preview(data["tasi_financials"], expanded=True, max_rows=5)
 
             # Example questions
             example_query = render_example_questions(max_visible=3)
@@ -141,8 +140,20 @@ else:
 
             # Process query and add to history
             if prompt:
+                # Route query to optimal view
+                view_name, route_reason = route_query(prompt)
+                selected_df = data[view_name]
+
+                # Apply advanced filters if set
+                if base_filters:
+                    selected_df = apply_filters(selected_df, base_filters)
+                    st.sidebar.caption(f"Filtered: {len(selected_df):,} rows")
+
+                # Show routing info
+                st.caption(f"Using: {view_name}")
+
                 st.session_state.last_query = prompt  # Store for chart visualization
-                add_recent_query(prompt, dataset_choice)  # Track in recent queries
+                add_recent_query(prompt, view_name)  # Track in recent queries
                 add_to_chat_history("user", prompt)
                 with st.chat_message("ai"):
                     with st.spinner("Analyzing data..."):
@@ -170,10 +181,10 @@ else:
 
         else:  # Compare mode
             from components.comparison_mode import render_comparison_mode
-            render_comparison_mode(selected_df)
+            render_comparison_mode(data["latest_financials"])
 
     except FileNotFoundError as e:
-        st.error("Data files not found. Please ensure data files are in the 'data' directory.")
+        st.error("Data files not found. Please ensure tasi_optimized files are in the 'data/tasi_optimized' directory.")
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
 
