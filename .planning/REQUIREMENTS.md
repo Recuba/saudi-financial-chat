@@ -7,10 +7,10 @@
 
 ### Query Routing
 
-- [ ] **ROUTE-01**: System detects query intent via keyword pattern matching
-- [ ] **ROUTE-02**: Ambiguous queries classified by LLM before execution
-- [ ] **ROUTE-03**: Unknown queries fall back to full dataset (`tasi_financials.parquet`)
-- [ ] **ROUTE-04**: Company/ticker names resolved via `ticker_index.parquet` lookup
+- [x] **ROUTE-01**: System detects query intent via keyword pattern matching
+- [x] **ROUTE-02**: Ambiguous queries classified by LLM before execution
+- [x] **ROUTE-03**: Unknown queries fall back to full dataset (`tasi_financials.parquet`)
+- [x] **ROUTE-04**: Company/ticker names resolved via `ticker_index.parquet` lookup
 
 ### Data Layer
 
@@ -56,10 +56,10 @@
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
-| ROUTE-01 | Phase 2 | Pending |
-| ROUTE-02 | Phase 2 | Pending |
-| ROUTE-03 | Phase 2 | Pending |
-| ROUTE-04 | Phase 2 | Pending |
+| ROUTE-01 | Phase 2 | Complete |
+| ROUTE-02 | Phase 2 | Complete |
+| ROUTE-03 | Phase 2 | Complete |
+| ROUTE-04 | Phase 2 | Complete |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |
@@ -72,4 +72,4 @@
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-02-01 after Phase 1 completion*
+*Last updated: 2026-02-01 after Phase 2 completion*

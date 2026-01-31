@@ -11,7 +11,7 @@ Ra'd AI v2 transforms the chatbot from a manual dataset-selection model to an in
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Data Layer Refactor** - Migrate backend to tasi_optimized parquet views
-- [ ] **Phase 2: Query Routing Engine** - Implement keyword + LLM-based query routing
+- [x] **Phase 2: Query Routing Engine** - Implement keyword + LLM-based query routing
 - [ ] **Phase 3: UI Simplification** - Remove sidebar, streamline to chatbox-only interface
 
 ## Phase Details
@@ -44,8 +44,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md - Entity extraction and enhanced keywords (expand patterns, add ticker/company detection, tests)
-- [ ] 02-02-PLAN.md - LLM intent classification (add LLM fallback for ambiguous queries, confidence scoring)
+- [x] 02-01-PLAN.md - Entity extraction and enhanced keywords (expand patterns, add ticker/company detection, tests)
+- [x] 02-02-PLAN.md - LLM intent classification (add LLM fallback for ambiguous queries, confidence scoring)
 
 ### Phase 3: UI Simplification
 **Goal**: Clean chatbox-only interface with no visible configuration complexity
@@ -69,7 +69,7 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Layer Refactor | 2/2 | Complete | 2026-02-01 |
-| 2. Query Routing Engine | 0/2 | Planned | - |
+| 2. Query Routing Engine | 2/2 | Complete | 2026-02-01 |
 | 3. UI Simplification | 0/? | Not started | - |
 
 ---
