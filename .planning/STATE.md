@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-01-31)
 
 **Core value:** Users can ask financial questions naturally and get accurate answers without understanding database structure
-**Current focus:** Phase 2 - Query Routing Engine
+**Current focus:** Phase 2 - Query Routing Engine (COMPLETE)
 
 ## Current Position
 
 Phase: 2 of 3 (Query Routing Engine)
-Plan: 1 of ? in current phase
-Status: In progress
-Last activity: 2026-02-01 - Completed 02-01-PLAN.md (Entity Extraction & Enhanced Keywords)
+Plan: 2 of 2 in current phase (COMPLETE)
+Status: Phase complete
+Last activity: 2026-02-01 - Completed 02-02-PLAN.md (LLM Intent Classification)
 
-Progress: [####------] 40%
+Progress: [######----] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 4 minutes
-- Total execution time: 0.20 hours
+- Total plans completed: 4
+- Average duration: 5 minutes
+- Total execution time: 0.32 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-data-layer-refactor | 2 | 8 min | 4 min |
-| 02-query-routing-engine | 1 | 4 min | 4 min |
+| 02-query-routing-engine | 2 | 11 min | 5.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (3 min), 01-02 (5 min), 02-01 (4 min)
-- Trend: Stable
+- Last 5 plans: 01-01 (3 min), 01-02 (5 min), 02-01 (4 min), 02-02 (7 min)
+- Trend: Slightly increasing (LLM integration more complex)
 
 *Updated after each plan completion*
 
@@ -53,6 +53,10 @@ Recent decisions affecting current work:
 - [01-02]: QueryRouter class for future LLM fallback extensibility
 - [02-01]: Use difflib.SequenceMatcher for fuzzy matching (no new dependencies)
 - [02-01]: Entity extraction returns company name when ticker detected
+- [02-02]: LLM only called for ambiguous queries (keywords match first)
+- [02-02]: Confidence levels: 1.0 keyword, 0.8 LLM, 0.5 fallback
+- [02-02]: UI shows confidence as labels (HIGH/MEDIUM/LOW) not raw numbers
+- [02-02]: Backward compatibility: route_query() returns 2-tuple, router.route() returns 4-tuple
 
 ### Pending Todos
 
@@ -65,7 +69,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-01
-Stopped at: Completed 02-01-PLAN.md (Entity Extraction & Enhanced Keywords)
+Stopped at: Completed 02-02-PLAN.md (LLM Intent Classification) - Phase 2 Complete
 Resume file: None
 
 ---
