@@ -14,7 +14,10 @@ st.set_page_config(
 )
 
 # --- IMPORTS ---
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 from styles.css import get_base_css, get_error_css
 from components.sidebar import render_sidebar
 from components.example_questions import render_example_questions
@@ -80,8 +83,8 @@ else:
     try:
         data = load_tasi_data()
 
-        # Initialize query router with ticker_index for entity extraction
-        router = QueryRouter(ticker_index=data['ticker_index'])
+        # Initialize query router with ticker_index for entity extraction and LLM fallback
+        router = QueryRouter(ticker_index=data['ticker_index'], llm_enabled=True)
 
         # Advanced filters (applied to main view for filtering)
         from components.filters.advanced_filters import render_advanced_filters, apply_filters
@@ -143,8 +146,9 @@ else:
 
             # Process query and add to history
             if prompt:
-                # Route query to optimal view with entity extraction
-                view_name, route_reason, entities = router.route(prompt)
+                # Route query to optimal view with entity extraction and confidence
+                view_name, route_reason, entities, confidence = router.route(prompt)
+                logger.info(f"Routed '{prompt[:50]}...' to {view_name}: {route_reason} (confidence={confidence})")
                 selected_df = data[view_name]
 
                 # Apply advanced filters if set
@@ -152,14 +156,25 @@ else:
                     selected_df = apply_filters(selected_df, base_filters)
                     st.sidebar.caption(f"Filtered: {len(selected_df):,} rows")
 
-                # Show routing info with entity detection
+                # Confidence label with color coding
+                if confidence >= 0.9:
+                    confidence_label = "HIGH"
+                    confidence_color = "green"
+                elif confidence >= 0.7:
+                    confidence_label = "MEDIUM"
+                    confidence_color = "orange"
+                else:
+                    confidence_label = "LOW"
+                    confidence_color = "red"
+
+                # Build routing caption with entity info
                 entity_info = ""
                 if entities.get('tickers'):
                     entity_info = f" | Detected: {', '.join(entities['tickers'])}"
                 elif entities.get('companies'):
                     entity_info = f" | Detected: {', '.join(entities['companies'][:2])}"
 
-                st.caption(f"Using: {view_name}{entity_info}")
+                st.caption(f"Using: {view_name} (:{confidence_color}[{confidence_label}]){entity_info}")
 
                 st.session_state.last_query = prompt  # Store for chart visualization
                 add_recent_query(prompt, view_name)  # Track in recent queries
