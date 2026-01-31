@@ -56,10 +56,10 @@ Plans:
   2. User can enter query and receive response without any prior configuration
   3. Comparison mode accessible via chat command or inline toggle (not sidebar)
   4. LLM defaults to Gemini 2.0 Flash with no visible model selector
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md - Remove sidebar and simplify interface (CSS hiding, remove sidebar code, update tests)
 
 ## Progress
 
@@ -70,7 +70,7 @@ Phases execute in numeric order: 1 -> 2 -> 3
 |-------|----------------|--------|-----------|
 | 1. Data Layer Refactor | 2/2 | Complete | 2026-02-01 |
 | 2. Query Routing Engine | 2/2 | Complete | 2026-02-01 |
-| 3. UI Simplification | 0/? | Not started | - |
+| 3. UI Simplification | 0/1 | Planned | - |
 
 ---
 *Roadmap created: 2026-01-31*
@@ -78,3 +78,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 *Coverage: 11/11 v1 requirements mapped*
 *Phase 1 planned: 2026-02-01*
 *Phase 2 planned: 2026-02-01*
+*Phase 3 planned: 2026-02-01*
