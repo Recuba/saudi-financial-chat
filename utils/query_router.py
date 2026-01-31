@@ -1,18 +1,29 @@
 """Query Router for Ra'd AI.
 
-Provides keyword-based routing to select optimal data views for user queries.
-Uses simple pattern matching for Phase 1; LLM fallback added in Phase 2.
+Provides keyword-based routing with LLM fallback for ambiguous queries.
+Uses pattern matching first, then LLM classification for uncertain intents.
 
 Usage:
     from utils.query_router import QueryRouter
 
-    router = QueryRouter(ticker_index=data['ticker_index'])
-    view_name, reason, entities = router.route("top 10 companies by revenue")
-    # Returns: ('top_bottom_performers', 'Ranking query detected', {'tickers': [], 'companies': [], 'sectors': []})
+    # With LLM fallback (recommended)
+    router = QueryRouter(ticker_index=data['ticker_index'], llm_enabled=True)
+    view_name, reason, entities, confidence = router.route("analyze SABIC performance")
+    # Returns: ('latest_financials', 'LLM: Company-specific query', {...}, 0.8)
+
+    # Keyword-only (faster, no LLM calls)
+    router = QueryRouter(ticker_index=data['ticker_index'], llm_enabled=False)
+    view_name, reason, entities, confidence = router.route("top 10 companies")
+    # Returns: ('top_bottom_performers', 'Ranking query detected', {...}, 1.0)
 
     # Backward compatible function (returns 2-tuple):
     from utils.query_router import route_query
     view_name, reason = route_query("top 10 companies by revenue")
+
+Confidence scores:
+    - 1.0: Keyword match (high confidence)
+    - 0.8: LLM classification (medium confidence)
+    - 0.5: Fallback to general (low confidence)
 """
 
 import logging
@@ -78,6 +89,7 @@ def route_query(query: str) -> Tuple[str, str]:
     """Route a query to the optimal data view based on keyword patterns.
 
     Backward compatible function that returns 2-tuple.
+    Uses keyword-only routing (no LLM) for fast, deterministic results.
 
     Args:
         query: Natural language query string
@@ -97,26 +109,32 @@ def route_query(query: str) -> Tuple[str, str]:
         >>> route_query("show me all data")
         ('tasi_financials', 'General query - using full dataset')
     """
-    router = QueryRouter()
-    view_name, reason, _ = router.route(query)
+    router = QueryRouter(llm_enabled=False)  # Keyword-only for backward compat
+    view_name, reason, _, _ = router.route(query)  # Ignore entities and confidence
     return view_name, reason
 
 
 class QueryRouter:
-    """Query router with entity extraction and extensibility for future LLM fallback.
+    """Query router with entity extraction and LLM fallback for ambiguous queries.
 
     Provides keyword-based routing with optional entity extraction when
-    ticker_index is provided. Can be extended with LLM classification in Phase 2.
+    ticker_index is provided. Uses LLM classification when keywords don't match.
 
     Usage:
-        # Basic usage (no entity extraction)
-        router = QueryRouter()
-        view_name, reason, entities = router.route("top 10 by revenue")
+        # With LLM fallback (recommended for production)
+        router = QueryRouter(ticker_index=data['ticker_index'], llm_enabled=True)
+        view_name, reason, entities, confidence = router.route("analyze SABIC")
+        # Returns: ('latest_financials', 'LLM: Company analysis query', {...}, 0.8)
 
-        # With entity extraction
-        router = QueryRouter(ticker_index=data['ticker_index'])
-        view_name, reason, entities = router.route("show 1010 financials")
-        # entities = {'tickers': ['1010'], 'companies': ['Riyad Bank'], 'sectors': []}
+        # Keyword-only (faster, deterministic)
+        router = QueryRouter(ticker_index=data['ticker_index'], llm_enabled=False)
+        view_name, reason, entities, confidence = router.route("top 10 by revenue")
+        # Returns: ('top_bottom_performers', 'Ranking query detected', {...}, 1.0)
+
+    Confidence levels:
+        - 1.0: High (keyword match)
+        - 0.8: Medium (LLM classification)
+        - 0.5: Low (fallback to general)
     """
 
     def __init__(self, ticker_index: Optional[pd.DataFrame] = None, llm_enabled: bool = False):
@@ -239,45 +257,124 @@ class QueryRouter:
 
         return entities
 
-    def route(self, query: str) -> Tuple[str, str, Dict[str, List[str]]]:
+    def route(self, query: str) -> Tuple[str, str, Dict[str, List[str]], float]:
         """Route a query to the optimal data view.
 
         Args:
             query: Natural language query string
 
         Returns:
-            Tuple of (view_name, reason, entities) where:
+            Tuple of (view_name, reason, entities, confidence) where:
             - view_name: Name of the optimal view to query
             - reason: Human-readable explanation for the routing decision
             - entities: Dict with extracted tickers, companies, sectors
+            - confidence: Routing confidence (1.0=keyword, 0.8=LLM, 0.5=fallback)
         """
         # Handle empty query
         if not query or not query.strip():
             logger.info("Empty query - routing to tasi_financials")
             return VIEW_MAPPING["general"], ROUTE_REASONS["general"], {
                 'tickers': [], 'companies': [], 'sectors': []
-            }
+            }, 0.5
 
-        # Extract entities (informational for now, routing logic unchanged)
-        entities = self._extract_entities(query)
+        # Step 1: Extract entities
+        entities = self._extract_entities(query) if self.ticker_index is not None else {
+            'tickers': [], 'companies': [], 'sectors': []
+        }
 
+        # Step 2: Keyword matching (high confidence)
+        view, reason = self._keyword_route(query)
+        if view != "tasi_financials":
+            logger.info(f"Keyword routed to {view}: {reason}")
+            return view, reason, entities, 1.0
+
+        # Step 3: LLM classification (medium confidence)
+        if self.llm_enabled:
+            view, reason = self._llm_classify(query, entities)
+            if view != "tasi_financials":
+                logger.info(f"LLM routed to {view}: {reason}")
+                return view, reason, entities, 0.8
+
+        # Step 4: Fallback (low confidence)
+        logger.info("Fallback to tasi_financials: No keyword or LLM match")
+        return "tasi_financials", "General query - using full dataset", entities, 0.5
+
+    def _keyword_route(self, query: str) -> Tuple[str, str]:
+        """Route query using keyword pattern matching.
+
+        Args:
+            query: Natural language query string
+
+        Returns:
+            Tuple of (view_name, reason)
+        """
         query_lower = query.lower()
 
-        # Check patterns in priority order
+        # Check patterns in priority order: ranking > sector > timeseries > latest
         for intent in ["ranking", "sector", "timeseries", "latest"]:
             keywords = self.keyword_patterns[intent]
             for keyword in keywords:
                 if keyword in query_lower:
-                    view_name = self.view_mapping[intent]
-                    reason = self.route_reasons[intent]
-                    logger.info(f"Routed query to {view_name}: {reason}")
-                    return view_name, reason, entities
+                    return self.view_mapping[intent], self.route_reasons[intent]
 
-        # Default fallback
-        view_name = self.view_mapping["general"]
-        reason = self.route_reasons["general"]
-        logger.info(f"Routed query to {view_name}: {reason}")
-        return view_name, reason, entities
+        # No keyword match
+        return self.view_mapping["general"], self.route_reasons["general"]
+
+    def _llm_classify(self, query: str, entities: Dict[str, List[str]]) -> Tuple[str, str]:
+        """Use LLM to classify ambiguous query intent.
+
+        Args:
+            query: Natural language query string
+            entities: Extracted entities from query
+
+        Returns:
+            Tuple of (view_name, reason)
+        """
+        prompt = f'''Classify this Saudi financial query into ONE category:
+
+Query: "{query}"
+
+Categories (choose ONE):
+- RANKING: Comparing companies, top/bottom N, best/worst performers
+- SECTOR: Sector-level analysis, industry comparisons, sector averages
+- TIMESERIES: Trends over time, growth rates, historical analysis, YoY changes
+- LATEST: Current metrics, most recent data, specific company's latest numbers
+- GENERAL: Complex multi-dimensional queries, unclear intent
+
+Detected entities: {entities}
+
+Respond in this exact format:
+CATEGORY|reason
+
+Example: TIMESERIES|Query asks about revenue change over years'''
+
+        try:
+            import pandasai as pai
+            response = pai.config.llm.chat(prompt)
+
+            # Parse response (CATEGORY|reason format)
+            if '|' in response:
+                category, reason = response.split('|', 1)
+                category = category.strip().upper()
+            else:
+                category = response.strip().upper()
+                reason = "LLM classification"
+
+            # Map category to view
+            category_to_view = {
+                'RANKING': 'top_bottom_performers',
+                'SECTOR': 'sector_benchmarks_latest',
+                'TIMESERIES': 'company_annual_timeseries',
+                'LATEST': 'latest_financials',
+                'GENERAL': 'tasi_financials'
+            }
+
+            view = category_to_view.get(category, 'tasi_financials')
+            return view, f"LLM: {reason.strip()}"
+
+        except Exception as e:
+            logger.warning(f"LLM classification failed: {e}")
+            return 'tasi_financials', 'Fallback: LLM classification failed'
 
     def get_available_views(self) -> list:
         """Get list of available view names."""
