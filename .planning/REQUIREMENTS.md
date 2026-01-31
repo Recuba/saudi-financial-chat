@@ -20,10 +20,10 @@
 
 ### UI Simplification
 
-- [ ] **UI-01**: Sidebar removed completely from interface
-- [ ] **UI-02**: Chat interface is the primary interaction method
-- [ ] **UI-03**: Comparison mode accessible via chat command or toggle (no sidebar)
-- [ ] **UI-04**: LLM model defaulted to Gemini 2.0 Flash (no visible selector)
+- [x] **UI-01**: Sidebar removed completely from interface
+- [x] **UI-02**: Chat interface is the primary interaction method
+- [x] **UI-03**: Comparison mode accessible via chat command or toggle (no sidebar)
+- [x] **UI-04**: LLM model defaulted to Gemini 2.0 Flash (no visible selector)
 
 ## v2 Requirements
 
@@ -60,10 +60,10 @@
 | ROUTE-02 | Phase 2 | Complete |
 | ROUTE-03 | Phase 2 | Complete |
 | ROUTE-04 | Phase 2 | Complete |
-| UI-01 | Phase 3 | Pending |
-| UI-02 | Phase 3 | Pending |
-| UI-03 | Phase 3 | Pending |
-| UI-04 | Phase 3 | Pending |
+| UI-01 | Phase 3 | Complete |
+| UI-02 | Phase 3 | Complete |
+| UI-03 | Phase 3 | Complete |
+| UI-04 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 11 total
@@ -72,4 +72,4 @@
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-02-01 after Phase 2 completion*
+*Last updated: 2026-02-01 after Phase 3 completion*
