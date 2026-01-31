@@ -686,3 +686,23 @@ def get_error_css() -> str:
 }}
 </style>
 """
+
+
+def get_no_sidebar_css() -> str:
+    """CSS to completely hide the sidebar and its toggle.
+
+    Used to create a clean chat-first interface where users don't need
+    to configure anything before asking questions.
+    """
+    return """
+<style>
+/* Hide sidebar completely */
+[data-testid="stSidebar"] {
+    display: none !important;
+}
+/* Remove sidebar toggle button */
+[data-testid="collapsedControl"] {
+    display: none !important;
+}
+</style>
+"""

@@ -11,6 +11,7 @@ st.set_page_config(
     page_title="Ra'd | Saudi Financial AI",
     page_icon="⚡",
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
 # --- IMPORTS ---
@@ -18,7 +19,7 @@ import logging
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
-from styles.css import get_base_css, get_error_css
+from styles.css import get_base_css, get_error_css, get_no_sidebar_css
 from components.sidebar import render_sidebar
 from components.example_questions import render_example_questions
 from components.chat import (
@@ -43,6 +44,7 @@ LOGO_PATH = Path(__file__).parent / "assets" / "logo.png"
 # --- APPLY STYLES ---
 st.markdown(get_base_css(), unsafe_allow_html=True)
 st.markdown(get_error_css(), unsafe_allow_html=True)
+st.markdown(get_no_sidebar_css(), unsafe_allow_html=True)
 
 # --- INITIALIZE SESSION STATE ---
 initialize_session()
