@@ -20,7 +20,6 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 from styles.css import get_base_css, get_error_css, get_no_sidebar_css
-from components.sidebar import render_sidebar
 from components.example_questions import render_example_questions
 from components.chat import (
     render_chat_input,
@@ -67,13 +66,6 @@ with col2:
             unsafe_allow_html=True
         )
 
-# --- SIDEBAR ---
-model_changed = render_sidebar()
-
-# --- RE-INITIALIZE LLM IF MODEL CHANGED ---
-if model_changed:
-    llm, llm_error = initialize_llm()
-
 # --- MAIN CONTENT ---
 st.divider()
 
@@ -87,14 +79,6 @@ else:
 
         # Initialize query router with ticker_index for entity extraction and LLM fallback
         router = QueryRouter(ticker_index=data['ticker_index'], llm_enabled=True)
-
-        # Advanced filters (applied to main view for filtering)
-        from components.filters.advanced_filters import render_advanced_filters, apply_filters
-        with st.sidebar:
-            filters = render_advanced_filters(data["tasi_financials"])
-
-        # Base filter state for query-time filtering
-        base_filters = filters if filters else None
 
         # Initialize active tab in session state
         if "active_tab" not in st.session_state:
@@ -152,11 +136,6 @@ else:
                 view_name, route_reason, entities, confidence = router.route(prompt)
                 logger.info(f"Routed '{prompt[:50]}...' to {view_name}: {route_reason} (confidence={confidence})")
                 selected_df = data[view_name]
-
-                # Apply advanced filters if set
-                if base_filters:
-                    selected_df = apply_filters(selected_df, base_filters)
-                    st.sidebar.caption(f"Filtered: {len(selected_df):,} rows")
 
                 # Confidence label with color coding
                 if confidence >= 0.9:
