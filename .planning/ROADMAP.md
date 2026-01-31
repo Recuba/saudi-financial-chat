@@ -10,7 +10,7 @@ Ra'd AI v2 transforms the chatbot from a manual dataset-selection model to an in
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Data Layer Refactor** - Migrate backend to tasi_optimized parquet views
+- [x] **Phase 1: Data Layer Refactor** - Migrate backend to tasi_optimized parquet views
 - [ ] **Phase 2: Query Routing Engine** - Implement keyword + LLM-based query routing
 - [ ] **Phase 3: UI Simplification** - Remove sidebar, streamline to chatbox-only interface
 
@@ -28,8 +28,8 @@ Ra'd AI v2 transforms the chatbot from a manual dataset-selection model to an in
 **Plans:** 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md - Data layer foundation (refactor data_loader.py, update tests)
-- [ ] 01-02-PLAN.md - Router and integration (create query_router.py, update app.py, simplify sidebar)
+- [x] 01-01-PLAN.md - Data layer foundation (refactor data_loader.py, update tests)
+- [x] 01-02-PLAN.md - Router and integration (create query_router.py, update app.py, simplify sidebar)
 
 ### Phase 2: Query Routing Engine
 **Goal**: System automatically routes queries to the optimal data view based on intent
@@ -67,7 +67,7 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Layer Refactor | 0/2 | Planned | - |
+| 1. Data Layer Refactor | 2/2 | ✓ Complete | 2026-02-01 |
 | 2. Query Routing Engine | 0/? | Not started | - |
 | 3. UI Simplification | 0/? | Not started | - |
 
