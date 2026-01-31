@@ -12,7 +12,7 @@ Ra'd AI v2 transforms the chatbot from a manual dataset-selection model to an in
 
 - [x] **Phase 1: Data Layer Refactor** - Migrate backend to tasi_optimized parquet views
 - [x] **Phase 2: Query Routing Engine** - Implement keyword + LLM-based query routing
-- [ ] **Phase 3: UI Simplification** - Remove sidebar, streamline to chatbox-only interface
+- [x] **Phase 3: UI Simplification** - Remove sidebar, streamline to chatbox-only interface
 
 ## Phase Details
 
@@ -59,7 +59,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 03-01-PLAN.md - Remove sidebar and simplify interface (CSS hiding, remove sidebar code, update tests)
+- [x] 03-01-PLAN.md - Remove sidebar and simplify interface (CSS hiding, remove sidebar code, update tests)
 
 ## Progress
 
@@ -70,7 +70,7 @@ Phases execute in numeric order: 1 -> 2 -> 3
 |-------|----------------|--------|-----------|
 | 1. Data Layer Refactor | 2/2 | Complete | 2026-02-01 |
 | 2. Query Routing Engine | 2/2 | Complete | 2026-02-01 |
-| 3. UI Simplification | 0/1 | Planned | - |
+| 3. UI Simplification | 1/1 | Complete | 2026-02-01 |
 
 ---
 *Roadmap created: 2026-01-31*
