@@ -1,16 +1,12 @@
 """Sidebar component for Ra'd AI.
 
-Provides database info, dataset selection, model selection, and column reference.
+Provides database info, model selection, column reference, and view information.
+Dataset selection is removed - queries are automatically routed to optimal views.
 """
 
 import streamlit as st
-from typing import Dict, Any, Tuple
-from utils.data_loader import (
-    load_data,
-    get_dataset_info,
-    get_column_info,
-    DATASET_DISPLAY_NAMES
-)
+from typing import Dict, Any
+from utils.data_loader import load_tasi_data, get_view_info, VIEW_NAMES
 from utils.llm_config import (
     get_llm_config_status,
     get_api_key,
@@ -20,147 +16,101 @@ from utils.llm_config import (
     DEFAULT_MODEL,
 )
 
-DATASET_DESCRIPTIONS = {
-    "analytics": "Pre-joined view with company info, metrics, and ratios. Best for most analysis queries.",
-    "filings": "Company metadata including name, symbol, sector, and fiscal year information.",
-    "facts": "Raw financial metrics (revenue, assets, liabilities, etc.) with 16,000+ data points.",
-    "ratios": "Calculated financial ratios (ROE, ROA, margins, etc.) with 18,000+ data points.",
+# View descriptions for the optional View Info section
+VIEW_DESCRIPTIONS = {
+    "tasi_financials": "Full dataset with all metrics and ratios",
+    "latest_financials": "Most recent record per company",
+    "latest_annual": "Most recent annual data per company",
+    "ticker_index": "Company metadata and identifiers",
+    "company_annual_timeseries": "Annual data with YoY growth metrics",
+    "sector_benchmarks_latest": "Sector-level aggregates and averages",
+    "top_bottom_performers": "Top/bottom 20 companies per metric",
 }
-
-
-def get_dataset_quick_stats(dataset_name: str) -> Dict[str, Any]:
-    """Get quick statistics for a dataset.
-
-    Args:
-        dataset_name: Name of the dataset
-
-    Returns:
-        Dictionary with rows, columns, and date range
-    """
-    data = load_data()
-    df = data[dataset_name]
-
-    stats = {
-        "rows": len(df),
-        "columns": len(df.columns),
-    }
-
-    # Add date range if available
-    if "period_end" in df.columns:
-        stats["date_range"] = f"{df['period_end'].min()} to {df['period_end'].max()}"
-    elif "fiscal_year" in df.columns:
-        stats["date_range"] = f"{df['fiscal_year'].min()} - {df['fiscal_year'].max()}"
-
-    return stats
 
 
 def render_database_info() -> None:
     """Render the database information section in collapsible expander."""
-    info = get_dataset_info()
+    info = get_view_info()
 
-    with st.expander("📊 Database Info", expanded=False):
+    with st.expander("Database Info", expanded=False):
         col1, col2 = st.columns(2)
 
         with col1:
             st.metric(
                 label="Companies",
-                value=f"{info['companies']:,}",
+                value=f"{info['total_companies']:,}",
                 help="Unique companies in the database"
-            )
-            st.metric(
-                label="Metrics",
-                value=f"{info['metrics']:,}",
-                help="Unique financial metrics"
             )
 
         with col2:
             st.metric(
-                label="Periods",
-                value=f"{info['periods']:,}",
-                help="Total fiscal periods"
-            )
-            st.metric(
-                label="Ratios",
-                value=f"{info['ratios']:,}",
-                help="Calculated financial ratios"
+                label="Records",
+                value=f"{info['total_records']:,}",
+                help="Total financial records"
             )
 
-
-def render_dataset_selector() -> str:
-    """Render dataset selection with descriptions and quick stats.
-
-    Returns:
-        Selected dataset name
-    """
-    st.header("Dataset Selection")
-
-    dataset_choice = st.selectbox(
-        "Choose dataset to query:",
-        options=list(DATASET_DISPLAY_NAMES.keys()),
-        format_func=lambda x: DATASET_DISPLAY_NAMES[x],
-        help="Select which dataset to analyze with your queries"
-    )
-
-    # Show description
-    st.caption(DATASET_DESCRIPTIONS.get(dataset_choice, ""))
-
-    # Show quick stats
-    stats = get_dataset_quick_stats(dataset_choice)
-    col1, col2 = st.columns(2)
-    with col1:
-        st.caption(f"📊 {stats['rows']:,} rows")
-    with col2:
-        st.caption(f"📋 {stats['columns']} columns")
-
-    if "date_range" in stats:
-        st.caption(f"📅 {stats['date_range']}")
-
-    return dataset_choice
+        st.caption(f"Views available: {info['views_available']}")
 
 
-def render_column_reference(dataset_name: str) -> None:
-    """Render available columns for the selected dataset.
+def render_column_reference() -> None:
+    """Render available columns from the main tasi_financials view.
 
-    Args:
-        dataset_name: Name of the currently selected dataset
+    Columns are grouped by category per metadata.json:
+    - identifiers: filing_id, ticker, company_name, etc.
+    - kpis: revenue, net_profit, total_assets, etc.
+    - ratios: return_on_equity, gross_margin, etc.
+    - categories: period_type, sector, company_type, etc.
     """
     st.header("Available Columns")
 
-    data = load_data()
-    df = data[dataset_name]
+    data = load_tasi_data()
+    df = data["tasi_financials"]
+    cols = df.columns.tolist()
 
-    if dataset_name == "analytics":
-        cols = df.columns.tolist()
-        # Show grouped columns
-        with st.expander(f"View all {len(cols)} columns", expanded=False):
-            # Group columns by category
-            company_cols = [c for c in cols if c in ['company_name', 'company_folder', 'sector', 'symbol', 'ticker', 'isin', 'sector_primary', 'industry']]
-            period_cols = [c for c in cols if c in ['period_end', 'fiscal_year', 'filing_id', 'currency', 'currency_code', 'rounding', 'scale_factor']]
-            metric_cols = [c for c in cols if c not in company_cols + period_cols]
+    # Group columns by category (per metadata.json)
+    identifiers = ["filing_id", "ticker", "company_name", "fiscal_year", "fiscal_quarter"]
+    kpis = ["revenue", "net_profit", "total_assets", "total_equity", "total_liabilities",
+            "operating_cash_flow", "capex", "free_cash_flow"]
+    ratios = ["return_on_equity", "return_on_assets", "gross_margin", "operating_margin",
+              "net_margin", "current_ratio", "quick_ratio", "debt_to_equity",
+              "debt_to_assets", "asset_turnover", "inventory_turnover", "interest_coverage_ratio"]
+    categories = ["period_type", "sector", "company_type", "size_category", "year_quarter"]
 
-            st.markdown("**Company Info:**")
-            st.code("\n".join(company_cols))
+    with st.expander(f"View all {len(cols)} columns", expanded=False):
+        st.markdown("**Identifiers:**")
+        available_ids = [c for c in identifiers if c in cols]
+        st.code("\n".join(available_ids))
 
-            st.markdown("**Period Info:**")
-            st.code("\n".join(period_cols))
+        st.markdown("**KPIs:**")
+        available_kpis = [c for c in kpis if c in cols]
+        st.code("\n".join(available_kpis))
 
-            st.markdown("**Financial Metrics:**")
-            st.code("\n".join(sorted(metric_cols)))
+        st.markdown("**Ratios:**")
+        available_ratios = [c for c in ratios if c in cols]
+        st.code("\n".join(available_ratios))
 
-    elif dataset_name == "filings":
-        st.code("\n".join(df.columns.tolist()))
+        st.markdown("**Categories:**")
+        available_cats = [c for c in categories if c in cols]
+        st.code("\n".join(available_cats))
 
-    elif dataset_name == "facts":
-        st.markdown("**Columns:**")
-        st.code("\n".join(df.columns.tolist()))
-        with st.expander(f"Available Metrics ({df['metric'].nunique()})", expanded=False):
-            st.code("\n".join(sorted(df['metric'].unique().tolist())))
+        # Show any other columns not in predefined groups
+        other_cols = [c for c in cols if c not in identifiers + kpis + ratios + categories]
+        if other_cols:
+            st.markdown("**Other:**")
+            st.code("\n".join(sorted(other_cols)))
 
-    elif dataset_name == "ratios":
-        st.markdown("**Columns:**")
-        st.code("\n".join(df.columns.tolist()))
-        with st.expander(f"Available Ratios ({df['ratio'].nunique()})", expanded=False):
-            st.code("\n".join(sorted(df['ratio'].unique().tolist())))
+
+def render_view_info() -> None:
+    """Render optional View Info section (collapsed by default).
+
+    Shows which views are available and their purpose.
+    """
+    with st.expander("View Info", expanded=False):
+        st.caption("Queries are automatically routed to the optimal view:")
+        for view_name in VIEW_NAMES:
+            desc = VIEW_DESCRIPTIONS.get(view_name, "")
+            st.markdown(f"**{view_name}**")
+            st.caption(desc)
 
 
 def render_model_selector() -> bool:
@@ -227,33 +177,32 @@ def render_llm_status() -> None:
         # Truncate long model names
         if len(model_name) > 30:
             model_name = model_name[:27] + "..."
-        st.success(f"AI Ready", icon="✅")
+        st.success(f"AI Ready", icon="checkmark")
     else:
-        st.error("AI not configured", icon="⚠️")
+        st.error("AI not configured", icon="warning")
         with st.expander("Setup required"):
             st.write("Configure your OpenRouter API key in secrets.")
             st.code('OPENROUTER_API_KEY = "sk-or-..."', language="toml")
 
 
-def render_sidebar() -> Tuple[str, bool]:
+def render_sidebar() -> bool:
     """Render the complete sidebar.
 
     Returns:
-        Tuple of (selected dataset name, model_changed boolean)
+        model_changed boolean indicating if the AI model was changed
     """
     with st.sidebar:
         render_database_info()
         st.divider()
 
-        dataset_choice = render_dataset_selector()
-        st.divider()
-
-        # Model selector (before column reference)
+        # Model selector
         model_changed = render_model_selector()
         st.divider()
 
-        render_column_reference(dataset_choice)
+        render_column_reference()
+
+        render_view_info()
 
         render_llm_status()
 
-        return dataset_choice, model_changed
+        return model_changed

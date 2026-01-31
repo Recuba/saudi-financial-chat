@@ -40,8 +40,8 @@ from .chat import (
 from .sidebar import (
     render_sidebar,
     render_database_info,
-    render_dataset_selector,
     render_column_reference,
+    render_view_info,
     render_llm_status,
 )
 
@@ -162,8 +162,8 @@ __all__ = [
     # Core - Sidebar
     "render_sidebar",
     "render_database_info",
-    "render_dataset_selector",
     "render_column_reference",
+    "render_view_info",
     "render_llm_status",
     # Core - Example questions
     "render_example_questions",
