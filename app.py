@@ -31,7 +31,7 @@ from components.chat import (
 from components.error_display import render_api_key_setup_guide
 from components.session_manager import initialize_session, add_recent_query
 from utils.data_loader import load_tasi_data
-from utils.query_router import route_query
+from utils.query_router import QueryRouter
 from utils.llm_config import initialize_llm, check_llm_ready
 
 # --- ASSETS ---
@@ -79,6 +79,9 @@ else:
     # Load data
     try:
         data = load_tasi_data()
+
+        # Initialize query router with ticker_index for entity extraction
+        router = QueryRouter(ticker_index=data['ticker_index'])
 
         # Advanced filters (applied to main view for filtering)
         from components.filters.advanced_filters import render_advanced_filters, apply_filters
@@ -140,8 +143,8 @@ else:
 
             # Process query and add to history
             if prompt:
-                # Route query to optimal view
-                view_name, route_reason = route_query(prompt)
+                # Route query to optimal view with entity extraction
+                view_name, route_reason, entities = router.route(prompt)
                 selected_df = data[view_name]
 
                 # Apply advanced filters if set
@@ -149,8 +152,14 @@ else:
                     selected_df = apply_filters(selected_df, base_filters)
                     st.sidebar.caption(f"Filtered: {len(selected_df):,} rows")
 
-                # Show routing info
-                st.caption(f"Using: {view_name}")
+                # Show routing info with entity detection
+                entity_info = ""
+                if entities.get('tickers'):
+                    entity_info = f" | Detected: {', '.join(entities['tickers'])}"
+                elif entities.get('companies'):
+                    entity_info = f" | Detected: {', '.join(entities['companies'][:2])}"
+
+                st.caption(f"Using: {view_name}{entity_info}")
 
                 st.session_state.last_query = prompt  # Store for chart visualization
                 add_recent_query(prompt, view_name)  # Track in recent queries
