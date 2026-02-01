@@ -274,6 +274,28 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
             st.info("No code was generated for this response.")
 
 
+# Field descriptions to help PandasAI understand the schema
+FIELD_DESCRIPTIONS = {
+    "ticker": "4-digit stock ticker code (e.g., 2222 for Saudi Aramco)",
+    "company_name": "Full company name in English",
+    "fiscal_year": "Year of the financial period (e.g., 2023, 2024)",
+    "fiscal_quarter": "Quarter number: 1=Q1, 2=Q2, 3=Q3, 4=Q4. Use this for quarter filtering.",
+    "period_type": "Either 'quarterly' or 'annual'",
+    "is_annual": "True for annual reports, False for quarterly",
+    "sector": "Industry sector (e.g., Financials, Insurance, Real Estate)",
+    "revenue": "Total revenue in SAR (Saudi Riyals)",
+    "net_profit": "Net profit/income in SAR",
+    "total_assets": "Total assets in SAR",
+    "total_equity": "Total shareholders equity in SAR",
+    "return_on_equity": "ROE ratio (net_profit / total_equity)",
+    "return_on_assets": "ROA ratio (net_profit / total_assets)",
+    "gross_margin": "Gross margin percentage",
+    "net_margin": "Net profit margin percentage",
+    "current_ratio": "Current assets / current liabilities",
+    "debt_to_equity": "Total debt / total equity ratio",
+}
+
+
 def process_query(
     query: str,
     dataset: Any,
@@ -291,7 +313,16 @@ def process_query(
     """
     try:
         import pandasai as pai
-        df = pai.DataFrame(dataset)
+
+        # Build schema with field descriptions for columns that exist in dataset
+        schema = {}
+        if pd is not None and isinstance(dataset, pd.DataFrame):
+            for col in dataset.columns:
+                if col in FIELD_DESCRIPTIONS:
+                    schema[col] = FIELD_DESCRIPTIONS[col]
+
+        # Create DataFrame with schema descriptions
+        df = pai.DataFrame(dataset, description="Saudi TASI financial data for listed companies", schema=schema)
         response = df.chat(query)
         response_data = format_response(response)
 

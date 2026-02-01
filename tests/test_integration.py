@@ -11,40 +11,46 @@ from pathlib import Path
 
 
 def test_parquet_files_exist():
-    """All required parquet files should exist."""
-    data_dir = Path(__file__).parent.parent / "data"
+    """All required tasi_optimized parquet files should exist."""
+    data_dir = Path(__file__).parent.parent / "data" / "tasi_optimized"
 
     required_files = [
-        "analytics_view.parquet",
-        "facts_numeric.parquet",
-        "filings.parquet",
-        "ratios.parquet"
+        "tasi_financials.parquet",
+        "latest_financials.parquet",
+        "latest_annual.parquet",
+        "ticker_index.parquet",
     ]
 
-    for f in required_files:
+    required_views = [
+        "views/company_annual_timeseries.parquet",
+        "views/sector_benchmarks_latest.parquet",
+        "views/top_bottom_performers.parquet",
+    ]
+
+    for f in required_files + required_views:
         assert (data_dir / f).exists(), f"Missing file: {f}"
 
 
-def test_analytics_view_has_required_columns():
-    """Analytics view should have required columns."""
-    data_dir = Path(__file__).parent.parent / "data"
-    df = pd.read_parquet(data_dir / "analytics_view.parquet")
+def test_tasi_financials_has_required_columns():
+    """Main tasi_financials view should have required columns."""
+    data_dir = Path(__file__).parent.parent / "data" / "tasi_optimized"
+    df = pd.read_parquet(data_dir / "tasi_financials.parquet")
 
     required_columns = [
-        'company_name', 'fiscal_year', 'revenue', 'net_profit',
-        'total_assets', 'roe', 'current_ratio'
+        'company_name', 'fiscal_year', 'fiscal_quarter', 'revenue', 'net_profit',
+        'total_assets', 'return_on_equity', 'current_ratio'
     ]
 
     for col in required_columns:
         assert col in df.columns, f"Missing column: {col}"
 
 
-def test_ratios_have_expected_structure():
-    """Ratios file should have expected structure."""
-    data_dir = Path(__file__).parent.parent / "data"
-    df = pd.read_parquet(data_dir / "ratios.parquet")
+def test_ticker_index_has_expected_structure():
+    """Ticker index should have expected structure."""
+    data_dir = Path(__file__).parent.parent / "data" / "tasi_optimized"
+    df = pd.read_parquet(data_dir / "ticker_index.parquet")
 
-    required_columns = ['filing_id', 'ratio', 'value']
+    required_columns = ['ticker', 'company_name', 'sector']
     for col in required_columns:
         assert col in df.columns, f"Missing column: {col}"
 

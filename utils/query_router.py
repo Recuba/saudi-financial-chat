@@ -56,6 +56,12 @@ KEYWORD_PATTERNS = {
     ],
 }
 
+# Historical years that require full dataset (top_bottom_performers only has 2024)
+HISTORICAL_YEARS = ["2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"]
+
+# Quarter patterns that indicate specific quarter filtering (for ranking queries with historical data)
+QUARTER_PATTERNS = ["q1", "q2", "q3", "q4", "quarter 1", "quarter 2", "quarter 3", "quarter 4"]
+
 # Mapping from query intent to optimal view name
 VIEW_MAPPING = {
     "ranking": "top_bottom_performers",
@@ -283,8 +289,8 @@ class QueryRouter:
         }
 
         # Step 2: Keyword matching (high confidence)
-        view, reason = self._keyword_route(query)
-        if view != "tasi_financials":
+        view, reason, is_deliberate = self._keyword_route(query)
+        if is_deliberate:
             logger.info(f"Keyword routed to {view}: {reason}")
             return view, reason, entities, 1.0
 
@@ -299,26 +305,42 @@ class QueryRouter:
         logger.info("Fallback to tasi_financials: No keyword or LLM match")
         return "tasi_financials", "General query - using full dataset", entities, 0.5
 
-    def _keyword_route(self, query: str) -> Tuple[str, str]:
+    def _keyword_route(self, query: str) -> Tuple[str, str, bool]:
         """Route query using keyword pattern matching.
 
         Args:
             query: Natural language query string
 
         Returns:
-            Tuple of (view_name, reason)
+            Tuple of (view_name, reason, is_deliberate) where is_deliberate
+            indicates if this was a deliberate match (True) or fallback (False)
         """
         query_lower = query.lower()
+
+        # Check if query mentions historical years (requires full dataset)
+        has_historical_year = any(year in query_lower for year in HISTORICAL_YEARS)
+
+        # Check if query mentions specific quarters (requires full dataset for filtering)
+        has_quarter = any(q in query_lower for q in QUARTER_PATTERNS)
+
+        # If query has historical year or specific quarter, use full dataset for ranking queries
+        # (top_bottom_performers only has 2024 data, no quarter breakdown)
+        if has_historical_year or has_quarter:
+            # Check if it's a ranking query - route to full dataset instead
+            for keyword in self.keyword_patterns["ranking"]:
+                if keyword in query_lower:
+                    reason = f"Ranking query with {'historical year' if has_historical_year else 'quarter filter'} - using full dataset"
+                    return "tasi_financials", reason, True  # Deliberate match
 
         # Check patterns in priority order: ranking > sector > timeseries > latest
         for intent in ["ranking", "sector", "timeseries", "latest"]:
             keywords = self.keyword_patterns[intent]
             for keyword in keywords:
                 if keyword in query_lower:
-                    return self.view_mapping[intent], self.route_reasons[intent]
+                    return self.view_mapping[intent], self.route_reasons[intent], True  # Deliberate match
 
-        # No keyword match
-        return self.view_mapping["general"], self.route_reasons["general"]
+        # No keyword match - fallback
+        return self.view_mapping["general"], self.route_reasons["general"], False
 
     def _llm_classify(self, query: str, entities: Dict[str, List[str]]) -> Tuple[str, str]:
         """Use LLM to classify ambiguous query intent.
