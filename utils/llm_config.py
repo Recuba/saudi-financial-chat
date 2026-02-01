@@ -11,8 +11,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Default model configuration
-DEFAULT_MODEL = "openrouter/google/gemini-2.0-flash-001"
-MODEL_DISPLAY_NAME = "Gemini 2.0 Flash"
+DEFAULT_MODEL = "openrouter/google/gemini-3-flash-preview"
+MODEL_DISPLAY_NAME = "Gemini 3 Flash"
 
 # OpenRouter API endpoint
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
@@ -104,7 +104,7 @@ def get_model_options(api_key: str) -> Dict[str, str]:
 
 def get_selected_model() -> str:
     """Get the currently selected model from session state."""
-    return st.session_state.get("selected_model", DEFAULT_MODEL)
+    return st.session_state.get("selected_model", DEFAULT_MODEL) or DEFAULT_MODEL
 
 
 def set_selected_model(model_id: str) -> None:
@@ -158,7 +158,7 @@ def get_llm_config_status() -> Dict[str, Any]:
     """Get the current LLM configuration status."""
     api_key = get_api_key()
     validation = validate_api_key(api_key)
-    selected_model = get_selected_model()
+    selected_model = get_selected_model() or DEFAULT_MODEL
 
     # Get display name for selected model
     if validation["valid"]:
