@@ -1,0 +1,87 @@
+{
+  "created_at": "2026-01-31T19:39:01.552390",
+  "source": "TASI_financials_clean.parquet",
+  "total_records": 4748,
+  "unique_tickers": 302,
+  "year_range": [
+    2016,
+    2025
+  ],
+  "period_types": {
+    "Quarterly": 3593,
+    "Annual": 1155
+  },
+  "sectors": {
+    "Other": 3645,
+    "Insurance": 491,
+    "Consumer Staples": 209,
+    "Financials": 194,
+    "Real Estate": 107,
+    "Utilities": 102
+  },
+  "optimizations": {
+    "partitioning": "by_year/ - Partitioned by fiscal_year",
+    "sorting": "Sorted by [fiscal_year, ticker, period_type]",
+    "encoding": "Dictionary encoding on: ['period_type', 'sector', 'company_type', 'size_category', 'year_quarter']",
+    "bloom_filters": "Enabled on: ['ticker', 'company_name', 'filing_id']",
+    "indexes": [
+      "latest_financials.parquet - Most recent record per company",
+      "latest_annual.parquet - Most recent annual record per company",
+      "ticker_index.parquet - Ticker metadata lookup"
+    ],
+    "views": [
+      "views/sector_yearly_avg.parquet - Sector \u00d7 Year averages",
+      "views/company_annual_timeseries.parquet - Annual data with YoY growth",
+      "views/sector_benchmarks_latest.parquet - Latest year sector stats",
+      "views/size_category_benchmarks.parquet - Size category stats",
+      "views/top_bottom_performers.parquet - Top/bottom 20 per metric"
+    ]
+  },
+  "columns": {
+    "identifiers": [
+      "filing_id",
+      "ticker",
+      "company_name",
+      "fiscal_year",
+      "fiscal_quarter"
+    ],
+    "kpis": [
+      "revenue",
+      "net_profit",
+      "total_assets",
+      "total_equity",
+      "total_liabilities",
+      "operating_cash_flow",
+      "capex",
+      "free_cash_flow"
+    ],
+    "ratios": [
+      "return_on_equity",
+      "return_on_assets",
+      "gross_margin",
+      "operating_margin",
+      "net_margin",
+      "current_ratio",
+      "quick_ratio",
+      "debt_to_equity",
+      "debt_to_assets",
+      "asset_turnover",
+      "inventory_turnover",
+      "interest_coverage_ratio"
+    ],
+    "categories": [
+      "period_type",
+      "sector",
+      "company_type",
+      "size_category",
+      "year_quarter"
+    ]
+  },
+  "query_recommendations": {
+    "year_filter": "Use by_year/ partitioned dataset",
+    "latest_data": "Use latest_financials.parquet or latest_annual.parquet",
+    "sector_comparison": "Use views/sector_benchmarks_latest.parquet",
+    "single_company": "Query main file with ticker filter (bloom filter optimized)",
+    "time_series": "Use views/company_annual_timeseries.parquet"
+  }
+}
