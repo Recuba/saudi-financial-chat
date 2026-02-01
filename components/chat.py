@@ -236,7 +236,7 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
 
     with tab_result:
         if response_type == "dataframe":
-            st.dataframe(data, use_container_width=True, hide_index=True)
+            st.dataframe(data, width="stretch", hide_index=True)
 
             # Auto-visualize if query suggests chart
             from components.visualizations.response_charts import should_render_chart, auto_visualize
@@ -244,7 +244,7 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
             if should_render_chart(last_query) and len(data) <= 50:
                 fig = auto_visualize(data, last_query)
                 if fig:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
 
         elif response_type == "chart":
             try:
@@ -258,7 +258,7 @@ def render_ai_response(response_data: Dict[str, Any]) -> None:
                         img = Image.open(io.BytesIO(img_bytes))
                         # Clean up temp file
                         os.remove(data)
-                    st.image(img, use_container_width=True)
+                    st.image(img, width="stretch")
                 else:
                     st.error("Unable to display chart: PIL not available")
             except Exception as e:
@@ -314,15 +314,17 @@ def process_query(
     try:
         import pandasai as pai
 
-        # Build schema with field descriptions for columns that exist in dataset
-        schema = {}
-        if pd is not None and isinstance(dataset, pd.DataFrame):
-            for col in dataset.columns:
-                if col in FIELD_DESCRIPTIONS:
-                    schema[col] = FIELD_DESCRIPTIONS[col]
+        # Build description with key field info to help PandasAI understand the data
+        description = """Saudi TASI financial data for listed companies.
+Key columns:
+- fiscal_quarter: Quarter number (1=Q1, 2=Q2, 3=Q3, 4=Q4). Filter by fiscal_quarter==4 for Q4 data.
+- fiscal_year: Year of the financial period (e.g., 2023, 2024)
+- revenue, net_profit, total_assets: Financial values in SAR (Saudi Riyals)
+- return_on_equity, return_on_assets: Ratio values (decimals)
+- sector: Industry sector name"""
 
-        # Create DataFrame with schema descriptions
-        df = pai.DataFrame(dataset, description="Saudi TASI financial data for listed companies", schema=schema)
+        # Create DataFrame with description
+        df = pai.DataFrame(dataset, description=description)
         response = df.chat(query)
         response_data = format_response(response)
 

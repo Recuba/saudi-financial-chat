@@ -87,7 +87,7 @@ def render_data_preview(
 
         # Preview table
         preview_df = format_preview_dataframe(df, max_rows=max_rows)
-        st.dataframe(preview_df, use_container_width=True, hide_index=True)
+        st.dataframe(preview_df, width="stretch", hide_index=True)
 
         # Show more / column info
         if total_rows > max_rows:

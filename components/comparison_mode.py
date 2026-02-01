@@ -215,7 +215,7 @@ def render_comparison_mode(df: "pd.DataFrame") -> None:
         years = sorted(df["fiscal_year"].unique().tolist(), reverse=True)
         year = st.selectbox("Fiscal Year", options=years)
 
-    if st.button("Compare", type="primary", use_container_width=True):
+    if st.button("Compare", type="primary", width="stretch"):
         if not selected_metrics:
             st.warning("Select at least one metric")
             return
@@ -282,4 +282,4 @@ def render_comparison_mode(df: "pd.DataFrame") -> None:
                     entity_col="company_name",
                     metric=metric
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")

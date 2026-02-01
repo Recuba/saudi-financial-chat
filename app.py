@@ -58,7 +58,7 @@ initialize_chat_history()
 col1, col2, col3 = st.columns([1, 6, 1])
 with col2:
     if LOGO_PATH.exists():
-        st.image(str(LOGO_PATH), use_container_width=True)
+        st.image(str(LOGO_PATH), width="stretch")
     else:
         st.markdown('<h1 class="brand-title">Ra\'d AI</h1>', unsafe_allow_html=True)
         st.markdown(
