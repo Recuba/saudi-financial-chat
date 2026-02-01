@@ -6,7 +6,10 @@ Handles scale factor normalization and value formatting for display.
 
 from __future__ import annotations
 from typing import List, Optional
+import logging
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 # Currency columns that need scale normalization
@@ -42,20 +45,41 @@ def normalize_to_sar(
 
     Returns:
         DataFrame with normalized values
+
+    Raises:
+        TypeError: If df is not a pandas DataFrame
+        ValueError: If df is None
     """
+    # Input validation
+    if df is None:
+        logger.error("normalize_to_sar received None DataFrame")
+        raise ValueError("DataFrame cannot be None")
+
+    if not isinstance(df, pd.DataFrame):
+        logger.error(f"normalize_to_sar received invalid type: {type(df)}")
+        raise TypeError(f"Expected pandas DataFrame, got {type(df).__name__}")
+
+    if df.empty:
+        logger.debug("normalize_to_sar received empty DataFrame, returning copy")
+        return df.copy()
+
     result = df.copy()
     cols_to_normalize = columns or [c for c in CURRENCY_COLUMNS if c in df.columns]
 
     if scale_column not in result.columns:
+        logger.debug(f"Scale column '{scale_column}' not found, skipping normalization")
         return result
 
+    normalized_count = 0
     for col in cols_to_normalize:
         if col not in result.columns:
             continue
         # Fill NaN scale factors with 1 to avoid propagating NaN
         scale = result[scale_column].fillna(1)
         result[col] = result[col] * scale
+        normalized_count += 1
 
+    logger.debug(f"Normalized {normalized_count} columns to SAR")
     return result
 
 
@@ -190,7 +214,24 @@ def format_dataframe_for_display(
 
     Returns:
         Display-ready DataFrame
+
+    Raises:
+        TypeError: If df is not a pandas DataFrame
+        ValueError: If df is None
     """
+    # Input validation
+    if df is None:
+        logger.error("format_dataframe_for_display received None DataFrame")
+        raise ValueError("DataFrame cannot be None")
+
+    if not isinstance(df, pd.DataFrame):
+        logger.error(f"format_dataframe_for_display received invalid type: {type(df)}")
+        raise TypeError(f"Expected pandas DataFrame, got {type(df).__name__}")
+
+    if df.empty:
+        logger.debug("format_dataframe_for_display received empty DataFrame")
+        return df.copy()
+
     result = df.copy()
 
     # Step 1: Normalize scale factors

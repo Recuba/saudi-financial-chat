@@ -25,6 +25,20 @@ try:
 except ImportError:
     DATA_PROCESSING_AVAILABLE = False
 
+# Security utilities
+try:
+    from .security import (
+        sanitize_query,
+        validate_input,
+        check_suspicious_patterns,
+        sanitize_filename,
+        mask_sensitive_data,
+        is_safe_path,
+    )
+    SECURITY_AVAILABLE = True
+except ImportError:
+    SECURITY_AVAILABLE = False
+
 __all__ = [
     # Data loader
     "load_data",
@@ -48,4 +62,15 @@ if DATA_PROCESSING_AVAILABLE:
         "normalize_to_sar",
         "format_dataframe_for_display",
         "create_styled_dataframe",
+    ])
+
+# Add security exports if available
+if SECURITY_AVAILABLE:
+    __all__.extend([
+        "sanitize_query",
+        "validate_input",
+        "check_suspicious_patterns",
+        "sanitize_filename",
+        "mask_sensitive_data",
+        "is_safe_path",
     ])

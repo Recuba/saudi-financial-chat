@@ -3,16 +3,21 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 import io
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     import pandas as pd
 except ImportError:
     pd = None
+    logger.warning("pandas not available for export functionality")
 
 try:
     import streamlit as st
 except ImportError:
     st = None
+    logger.warning("streamlit not available for export functionality")
 
 
 def generate_export_filename(base_name: str, extension: str) -> str:
@@ -37,10 +42,25 @@ def export_to_csv(df: "pd.DataFrame") -> str:
 
     Returns:
         CSV string
+
+    Raises:
+        ImportError: If pandas is not available
+        TypeError: If df is not a DataFrame
+        ValueError: If df is None
     """
     if pd is None:
+        logger.error("pandas not available for CSV export")
         raise ImportError("pandas required")
 
+    if df is None:
+        logger.error("export_to_csv received None DataFrame")
+        raise ValueError("DataFrame cannot be None")
+
+    if not isinstance(df, pd.DataFrame):
+        logger.error(f"export_to_csv received invalid type: {type(df)}")
+        raise TypeError(f"Expected pandas DataFrame, got {type(df).__name__}")
+
+    logger.info(f"Exporting DataFrame to CSV ({len(df)} rows, {len(df.columns)} columns)")
     return df.to_csv(index=False)
 
 
@@ -52,12 +72,31 @@ def export_to_excel(df: "pd.DataFrame") -> bytes:
 
     Returns:
         Excel file as bytes
+
+    Raises:
+        ImportError: If pandas is not available
+        TypeError: If df is not a DataFrame
+        ValueError: If df is None
     """
     if pd is None:
+        logger.error("pandas not available for Excel export")
         raise ImportError("pandas required")
 
+    if df is None:
+        logger.error("export_to_excel received None DataFrame")
+        raise ValueError("DataFrame cannot be None")
+
+    if not isinstance(df, pd.DataFrame):
+        logger.error(f"export_to_excel received invalid type: {type(df)}")
+        raise TypeError(f"Expected pandas DataFrame, got {type(df).__name__}")
+
+    logger.info(f"Exporting DataFrame to Excel ({len(df)} rows, {len(df.columns)} columns)")
     buffer = io.BytesIO()
-    df.to_excel(buffer, index=False, engine="openpyxl")
+    try:
+        df.to_excel(buffer, index=False, engine="openpyxl")
+    except Exception as e:
+        logger.error(f"Failed to export to Excel: {e}")
+        raise
     return buffer.getvalue()
 
 

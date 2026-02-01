@@ -2,11 +2,15 @@
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     import streamlit as st
 except ImportError:
     st = None
+    logger.warning("streamlit not available for session management")
 
 
 SESSION_DEFAULTS: Dict[str, Any] = {
@@ -47,9 +51,14 @@ def initialize_session() -> None:
     if st is None:
         raise RuntimeError("Streamlit required")
 
+    initialized_keys = []
     for key, default_value in SESSION_DEFAULTS.items():
         if key not in st.session_state:
             st.session_state[key] = default_value
+            initialized_keys.append(key)
+
+    if initialized_keys:
+        logger.debug(f"Initialized session state keys: {initialized_keys}")
 
 
 def get_session_value(key: str, default: Any = None) -> Any:
@@ -87,11 +96,17 @@ def add_favorite_query(query: str) -> None:
     """
     if st is None:
         raise RuntimeError("Streamlit required")
+
+    if not query or not isinstance(query, str):
+        logger.warning(f"Invalid query provided to add_favorite_query: {type(query)}")
+        return
+
     initialize_session()
     favorites = st.session_state.favorite_queries
     if query not in favorites:
         favorites.append(query)
         st.session_state.favorite_queries = favorites[-20:]  # Keep last 20
+        logger.debug(f"Added query to favorites (total: {len(st.session_state.favorite_queries)})")
 
 
 def remove_favorite_query(query: str) -> None:
@@ -128,6 +143,11 @@ def add_recent_query(query: str, dataset: str = "") -> None:
     """
     if st is None:
         raise RuntimeError("Streamlit required")
+
+    if not query or not isinstance(query, str):
+        logger.warning(f"Invalid query provided to add_recent_query: {type(query)}")
+        return
+
     initialize_session()
     entry = {
         "query": query,
@@ -139,6 +159,7 @@ def add_recent_query(query: str, dataset: str = "") -> None:
     recent = [r for r in recent if r.get("query") != query]
     recent.insert(0, entry)
     st.session_state.recent_queries = recent[:10]  # Keep last 10
+    logger.debug(f"Added query to recent history (total: {len(st.session_state.recent_queries)})")
 
 
 def get_recent_queries() -> List[Dict[str, Any]]:
