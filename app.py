@@ -87,7 +87,7 @@ else:
         # Mode selection (radio buttons instead of tabs for better chat_input compatibility)
         mode = st.radio(
             "Mode",
-            ["Chat", "Compare"],
+            ["Chat", "Compare", "Valuation"],
             horizontal=True,
             label_visibility="collapsed",
             key="mode_selector"
@@ -184,9 +184,13 @@ else:
                     else:
                         render_ai_response(response)
 
-        else:  # Compare mode
+        elif mode == "Compare":
             from components.comparison_mode import render_comparison_mode
             render_comparison_mode(data["latest_financials"])
+
+        else:  # Valuation mode
+            from components.valuation_dashboard import render_valuation_dashboard
+            render_valuation_dashboard()
 
     except FileNotFoundError as e:
         st.error("Data files not found. Please ensure tasi_optimized files are in the 'data/tasi_optimized' directory.")
