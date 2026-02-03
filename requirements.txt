@@ -10,3 +10,9 @@ requests
 
 # Visualization
 plotly>=5.0.0
+
+# Database
+psycopg2-binary>=2.9.0
+
+# Stock Data
+yfinance>=0.2.0
